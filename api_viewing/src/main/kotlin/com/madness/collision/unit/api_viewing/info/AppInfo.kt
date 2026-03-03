@@ -37,6 +37,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import java.io.File
+import java.io.FileNotFoundException
 import java.util.TreeSet
 import kotlin.io.path.Path
 import kotlin.io.path.name
@@ -151,9 +152,12 @@ internal object AppInfo {
         val baseName = if (OsUtils.satisfy(OsUtils.O)) Path(pkg.basePath).name else File(pkg.basePath).name
         val parentPath = pkg.basePath.replaceFirst(baseName, "")
         val sizes = pkg.apkPaths.map { path ->
+            val apk = File(path)
+            val access = runCatching { apk.canRead() || throw FileNotFoundException(path) }
+                .onFailure(Throwable::printStackTrace)
+                .getOrDefault(false)
             val fileName = path.replaceFirst(parentPath, "")
-            val file = File(path).takeIf { it.exists() } ?: return@map fileName to null
-            fileName to file.length()
+            if (access) (fileName to apk.length()) else (fileName to null)
         }
         val totalBytes = sizes.sumOf { it.second ?: 0 }.takeIf { it > 0 }
         val totalSize = totalBytes?.let { Formatter.formatFileSize(context, it) }

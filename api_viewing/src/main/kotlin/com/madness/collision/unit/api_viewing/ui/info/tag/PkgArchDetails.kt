@@ -66,7 +66,11 @@ fun PkgArchDetails(app: ApiViewingApp, modifier: Modifier = Modifier) {
         val animJob = launch { delay(AnimationConstants.DefaultDurationMillis.toLong()) }
         value = withContext(Dispatchers.IO) {
             app.appPackage.apkPaths
-                .flatMapTo(mutableSetOf()) { SharedLibs.getNativeLibAbiSet(File(it)) }
+                .flatMapTo(mutableSetOf()) { path ->
+                    runCatching { SharedLibs.getNativeLibAbiSet(File(path)) }
+                        .onFailure(Throwable::printStackTrace)
+                        .getOrDefault(emptySet())
+                }
                 .also { app.nativeLibAbiSet = it }
                 .toList().also { animJob.join() }
         }

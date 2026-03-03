@@ -23,14 +23,27 @@ import android.content.pm.SharedLibraryInfo
 import com.madness.collision.misc.PackageCompat
 import com.madness.collision.util.os.OsUtils
 import java.io.File
+import java.io.FileNotFoundException
 import java.util.zip.ZipFile
 
 object SharedLibs {
+    /**
+     * @throws SecurityException If access to the file is denied
+     * @throws FileNotFoundException If file does not exist or cannot be read
+     */
     fun getNativeLibAbiSet(file: File): Set<String> {
+        // check file is readable (implies exists)
+        file.canRead() || throw FileNotFoundException(file.path)
         return getApkNativeLibAbiSet(file)
     }
 
+    /**
+     * @throws SecurityException If access to the file is denied
+     * @throws FileNotFoundException If file does not exist or cannot be read
+     */
     fun getNativeLibs(file: File): List<Triple<String, Long, Long>> {
+        // check file is readable (implies exists)
+        file.canRead() || throw FileNotFoundException(file.path)
         return getApkNativeLibs(file)
     }
 
