@@ -28,6 +28,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 data class AppPkgChanges(
     val previousRecords: List<ApiViewingApp>?,
@@ -106,6 +107,10 @@ class UpdateRepoImpl(
     }
 
     override fun getPersistentApps(pkgNames: List<String>): List<ApiViewingApp> {
+        runBlocking(coroutineScope.coroutineContext) {
+            // retrieve latest pkg infos
+            appRepo.maintainPartialRecords(pkgNames)
+        }
         return medRepo.get(pkgNames, init = true)
     }
 }

@@ -194,7 +194,12 @@ class AppUpdatesViewModel : ViewModel() {
         if (!usedList.isNullOrEmpty()) {
             // reuse existing records to avoid non-persistent tags' re-computations
             val preSet = preSections[AppUpdatesIndex.USE]?.associateBy { it.app.packageName }
-            val reuser = { upd: UpdatedApp -> preSet!![upd.app.packageName] ?: upd }
+            val reuser = { upd: UpdatedApp ->
+                preSet!![upd.app.packageName]
+                    // reuse only when update time is not changed
+                    ?.takeIf { it.app.updateTime == upd.app.updateTime }
+                    ?: upd
+            }
             mergedUpdates[AppUpdatesIndex.USE] = preSet?.let { usedList.map(reuser) } ?: usedList
         }
         return mergedUpdates

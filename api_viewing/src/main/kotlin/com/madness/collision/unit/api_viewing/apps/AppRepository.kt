@@ -42,6 +42,7 @@ interface AppRepository {
     fun getMaintainedApp(): ApiViewingApp
     fun queryApps(query: String): List<ApiViewingApp>
     suspend fun maintainRecords(context: Context)
+    suspend fun maintainPartialRecords(packageNames: List<String>)
 }
 
 internal object AppRepo {
@@ -57,7 +58,12 @@ internal object AppRepo {
         cachedRepo.get()?.let { return it }
         val dao = AppRoom.getDatabase(context).appDao()
         val mediator = AppMediatorRepo(dao, context.applicationContext)
-        return AppRepoImpl(dao, mediator, pkgProvider)
+        val recordMaintainer = object : AppRecordMaintainer {
+            private val maintainer = RecordMaintainer<PackageInfo>(context.applicationContext, dao)
+            override fun update(list: List<PackageInfo>) = maintainer.update(list)
+            override fun checkRemoval(list: List<PackageInfo>) = maintainer.checkRemoval(list)
+        }
+        return AppRepoImpl(dao, mediator, pkgProvider, recordMaintainer)
             .also { cachedRepo = WeakReference(it) }
     }
 }
@@ -69,14 +75,22 @@ class DumbAppRepo(private val medRepo: AppMediatorRepo) : AppRepository {
     override fun getMaintainedApp(): ApiViewingApp = medRepo.getMaintainedApp()
     override fun queryApps(query: String) = error("No-op")
     override suspend fun maintainRecords(context: Context) = error("No-op")
+    override suspend fun maintainPartialRecords(packageNames: List<String>) = error("No-op")
+}
+
+interface AppRecordMaintainer {
+    fun update(list: List<PackageInfo>)
+    fun checkRemoval(list: List<PackageInfo>)
 }
 
 class AppRepoImpl(
     private val appDao: AppDao,
     private val medRepo: AppMediatorRepo,
     private val pkgProvider: PackageInfoProvider,
+    private val recordMaintainer: AppRecordMaintainer,
 ) : AppRepository {
     private val mutexMtn = Mutex()
+    private val partMtnMutex = Mutex()
     var lastMaintenanceTime: Long = -1L
         private set
 
@@ -136,15 +150,31 @@ class AppRepoImpl(
         }
     }
 
+    override suspend fun maintainPartialRecords(packageNames: List<String>) {
+        if (packageNames.isEmpty()) return
+        // lock as soon as possible
+        partMtnMutex.withLock {
+            val pkgNameSet = packageNames.toSet()
+            val allPackages = pkgProvider.getAll()
+            val updPackages = allPackages.filter { it.packageName in pkgNameSet }
+            yield()  // cooperative
+
+            // update records
+            recordMaintainer.update(updPackages)
+        }
+    }
+
     override suspend fun maintainRecords(context: Context) = mutexMtn.withLock {
         val allPackages = pkgProvider.getAll()
         yield()  // cooperative
 
         // update records
         val dao = appDao
-        RecordMaintainer<PackageInfo>(context, dao).run {
-            update(allPackages)
-            checkRemoval(allPackages)
+        partMtnMutex.withLock {
+            recordMaintainer.run {
+                update(allPackages)
+                checkRemoval(allPackages)
+            }
         }
         lastMaintenanceTime = System.currentTimeMillis()
         yield()  // cooperative
