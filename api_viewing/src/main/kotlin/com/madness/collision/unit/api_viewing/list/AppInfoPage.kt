@@ -43,6 +43,8 @@ import androidx.compose.ui.unit.*
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.widget.NestedScrollView
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.AsyncImage
 import coil3.compose.rememberAsyncImagePainter
 import com.madness.collision.chief.app.stateOf
@@ -58,6 +60,7 @@ import com.madness.collision.unit.api_viewing.tag.app.AppTagManager
 import com.madness.collision.unit.api_viewing.tag.inflater.AppTagInflater
 import com.madness.collision.unit.api_viewing.ui.comp.sealFileOf
 import com.madness.collision.unit.api_viewing.ui.info.AppDetailsContent
+import com.madness.collision.unit.api_viewing.ui.info.AppInfoViewModel
 import com.madness.collision.unit.api_viewing.ui.info.AppSwitcher
 import com.madness.collision.unit.api_viewing.ui.info.AppSwitcherHandler
 import com.madness.collision.unit.api_viewing.ui.info.LibPage
@@ -74,12 +77,24 @@ import kotlinx.coroutines.flow.onEach
 import racra.compose.smooth_corner_rect_library.AbsoluteSmoothCornerShape
 import kotlin.math.roundToInt
 
+@Immutable
+internal data class AppInfoUiState(
+    val tags: List<ExpressedTag>,
+)
+
 @Composable
 fun AppInfoPage(
     app: ApiViewingApp,
     shareIcon: () -> Unit,
     shareApk: () -> Unit,
 ) {
+    val context = LocalContext.current
+    val viewModel = viewModel<AppInfoViewModel>()
+    LaunchedEffect(Unit) { viewModel.init(context) }
+    LaunchedEffect(app.appPackage.basePath.ifEmpty(app::packageName)) {
+        viewModel.expressTags(app)
+    }
+
     CompositionLocalProvider(LocalApp provides app) {
         AppInfoPage(shareIcon, shareApk)
     }
@@ -423,14 +438,9 @@ private fun TagDetailsContent(
     contentPadding: PaddingValues,
 ) {
     val app = LocalApp.current
-    val context = LocalContext.current
-    var lists: List<ExpressedTag>? by remember { mutableStateOf(null) }
-    LaunchedEffect(Unit) {
-        withContext(Dispatchers.IO) {
-            AppInfo.expressTags(app, context) { lists = it }
-        }
-    }
-    val list = lists
+    val viewModel = viewModel<AppInfoViewModel>()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val list = uiState.tags
     if (list != null) {
         LibPage(
             app = app,
