@@ -65,6 +65,8 @@ import com.madness.collision.unit.api_viewing.ui.info.AppSwitcher
 import com.madness.collision.unit.api_viewing.ui.info.AppSwitcherHandler
 import com.madness.collision.unit.api_viewing.ui.info.LibPage
 import com.madness.collision.unit.api_viewing.ui.info.TagDetailsList
+import com.madness.collision.unit.api_viewing.ui.info.tag.ExpressTag
+import com.madness.collision.unit.api_viewing.ui.info.tag.expressTagItems
 import com.madness.collision.util.dev.DarkPreview
 import com.madness.collision.util.dev.StandardPreview
 import com.madness.collision.util.mainApplication
@@ -80,6 +82,7 @@ import kotlin.math.roundToInt
 @Immutable
 internal data class AppInfoUiState(
     val tags: List<ExpressedTag>,
+    val expTags: List<ExpressTag>,
 )
 
 @Composable
@@ -440,7 +443,8 @@ private fun TagDetailsContent(
     val app = LocalApp.current
     val viewModel = viewModel<AppInfoViewModel>()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val list = uiState.tags
+    val (list, expTags) = uiState
+
     if (list != null) {
         LibPage(
             app = app,
@@ -451,6 +455,8 @@ private fun TagDetailsContent(
                     TagDetailsList(app, list, getClick, splitApks)
                 }
             }
+            // tag groups
+            expressTagItems(tags = expTags)
         }
     } else {
         Box(Modifier)

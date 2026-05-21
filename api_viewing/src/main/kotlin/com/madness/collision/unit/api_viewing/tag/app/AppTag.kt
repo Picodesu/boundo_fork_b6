@@ -142,42 +142,8 @@ internal class AppTagInfo(
     }
 
     object IdGroup {
-        val BUILT_IN: List<String> = listOf(
-            ID_APP_INSTALLER_PLAY,
-            ID_APP_INSTALLER,
-            ID_TECH_FLUTTER,
-            ID_TECH_REACT_NATIVE,
-            ID_TECH_XAMARIN,
-            ID_TECH_MAUI,
-            ID_TECH_CORDOVA,
-            ID_TECH_KOTLIN,
-            ID_TECH_X_COMPOSE,
-            ID_TECH_COMPOSE_CMP,
-            ID_PKG_64BIT,
-            ID_APP_HIDDEN,
-            ID_APP_SYSTEM,
-            ID_APP_SYSTEM_CORE,
-            ID_APP_SYSTEM_MODULE,
-            ID_APP_CATEGORY,
-            ID_TYPE_OVERLAY,
-            ID_TYPE_INSTANT,
-            ID_TYPE_WEB_APK,
-            ID_PKG_AAB,
-            ID_APP_ADAPTIVE_ICON,
-            ID_APP_PREDICTIVE_BACK,
-            ID_MSG_FCM,
-            ID_MSG_HUAWEI,
-            ID_MSG_XIAOMI,
-            ID_MSG_MEIZU,
-            ID_MSG_OPPO,
-            ID_MSG_VIVO,
-            ID_MSG_JPUSH,
-            ID_MSG_UPUSH,
-            ID_MSG_TPNS,
-            ID_MSG_ALI,
-            ID_MSG_BAIDU,
-            ID_MSG_GETUI,
-        )
+        @Deprecated("Use AppTagManager.BuiltInTags instead")
+        val BUILT_IN: List<String> = AppTagManager.BuiltInTags.keys.toList()
         val STATIC_ICON: List<String> = listOf(
             ID_TECH_FLUTTER,
             ID_TECH_REACT_NATIVE,
@@ -256,8 +222,11 @@ internal fun AppTagInfo.toExpressible(): ExpressibleTag {
 }
 
 internal object AppTagManager {
+    /** A map of all built-in tags predefined. */
+    val BuiltInTags: Map<String, AppTagInfo> = builtInTags()
+    /** A map of available tags. */
     val tags: Map<String, AppTagInfo> by lazy {
         val context = appContext
-        builtInTags().filterValues { it.isAvailable(context) }
+        BuiltInTags.filterValues { it.isAvailable(context) }
     }
 }

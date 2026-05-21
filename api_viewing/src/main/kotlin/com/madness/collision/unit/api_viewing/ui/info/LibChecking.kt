@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.sp
 import com.madness.collision.unit.api_viewing.R
 import com.madness.collision.unit.api_viewing.data.ApiViewingApp
 import com.madness.collision.unit.api_viewing.info.*
+import com.madness.collision.unit.api_viewing.ui.info.tag.ExpressGroupTag
 import com.madness.collision.util.mainApplication
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -112,8 +113,8 @@ fun LibPage(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center,
         ) {
-            for (tabIndex in 0 until compTypeList.size + nonCompItemCount) {
-                if (tabIndex < nonCompItemCount) {
+            for (tabIndex in 0 until compTypeList.size + nonCompTypeCount) {
+                if (tabIndex < nonCompTypeCount) {
                     val label = stringResource(R.string.av_settings_tags)
                     CompTab(label, selected = tabIndex == selTabIndex, loading = false, onClick = click@{
                         if (selTabIndex == tabIndex) return@click
@@ -155,7 +156,7 @@ fun LibPage(
         }, listContent)
         LaunchedEffect(listIndexNotifier) {
             val index = listState.firstVisibleItemIndex
-            selTabIndex = listIndexNotifier + nonCompItemCount
+            selTabIndex = listIndexNotifier + nonCompTypeCount
             Log.d("LIB-TYPE", "ListIndex/index=$index/type=${listIndexNotifier}/selTab=$selTabIndex")
         }
         LaunchedEffect(itemCollectionNotifier) {
@@ -252,7 +253,9 @@ private fun CompTab(label: String, selected: Boolean, loading: Boolean, onClick:
 }
 
 // show "tags" tab before comp types
-private const val nonCompItemCount = 1
+private const val nonCompTypeCount = 1
+// legacy tag list + tag group grid items
+private val nonCompItemCount = 1 + (ExpressGroupTag.Groups.size / 2)
 private val compTypeList = listOf(
     PackCompType.SharedLibrary,
     PackCompType.NativeLibrary,

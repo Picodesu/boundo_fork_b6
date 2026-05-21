@@ -79,7 +79,7 @@ internal object AppTagInflater {
     }
 
     private fun makeTagIcon(context: Context, drawable: Drawable): Bitmap? {
-        val width = X.size(context, 12f, X.DP).roundToInt()
+        val width = X.size(context, 27f, X.DP).roundToInt()
         val bitmap = Bitmap.createBitmap(width, width, Bitmap.Config.ARGB_8888)
         drawable.setBounds(0, 0, width, width)
         drawable.draw(Canvas(bitmap))

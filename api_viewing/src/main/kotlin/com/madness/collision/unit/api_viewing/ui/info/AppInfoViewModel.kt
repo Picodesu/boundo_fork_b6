@@ -17,12 +17,16 @@
 package com.madness.collision.unit.api_viewing.ui.info
 
 import android.content.Context
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.madness.collision.unit.api_viewing.data.ApiViewingApp
 import com.madness.collision.unit.api_viewing.data.repo.ArtTagRepoImpl
 import com.madness.collision.unit.api_viewing.data.repo.ArtTagRepository
+import com.madness.collision.unit.api_viewing.info.ExpressedTag
 import com.madness.collision.unit.api_viewing.list.AppInfoUiState
+import com.madness.collision.unit.api_viewing.ui.info.tag.ExpressGroupTag
+import com.madness.collision.unit.api_viewing.ui.info.tag.ExpressTag
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,6 +37,13 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+/**
+ * Changelog 2026
+ * 05.24 classic/group tags, UI model mapper
+ * 05.14 view model, UI state
+ */
+
+/** App info view model. */
 internal class AppInfoViewModel : ViewModel() {
     private var tagRepo: ArtTagRepository? = null
     private val mutUiState: MutableStateFlow<AppInfoUiState>
@@ -42,7 +53,7 @@ internal class AppInfoViewModel : ViewModel() {
     private var tagExpJob: Job? = null
 
     init {
-        val state = AppInfoUiState(tags = emptyList())
+        val state = AppInfoUiState(tags = emptyList(), expTags = emptyList())
         mutUiState = MutableStateFlow(state)
         uiState = mutUiState.asStateFlow()
     }
@@ -61,11 +72,25 @@ internal class AppInfoViewModel : ViewModel() {
             val tagRepo = tagRepo ?: return@launch
             tagRepo.express(app)
                 .onEach { tags ->
+                    // partition tags into group/classic ones, by ExpressGroupTag lookup
+                    val gTagIds = ExpressGroupTag.Groups.flatMapTo(HashSet()) { it.value }
+                    val (groupTags, classicTags) = tags.partition { it.intrinsic.id in gTagIds }
+
+                    val expTags = groupTags.map(ExpressedTag::toExpTag)
                     mutUiState.update { currValue ->
-                        currValue.copy(tags = tags)
+                        currValue.copy(tags = classicTags, expTags = expTags)
                     }
                 }
                 .launchIn(this)
         }
     }
 }
+
+internal fun ExpressedTag.toExpTag() =
+    ExpressTag(
+        id = intrinsic.id,
+        label = label,
+        desc = desc,
+        icon = info.icon?.bitmap?.asImageBitmap(),
+        activated = activated,
+    )
