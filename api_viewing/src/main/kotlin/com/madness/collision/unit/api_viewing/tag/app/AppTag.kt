@@ -128,6 +128,7 @@ internal class AppTagInfo(
         const val ID_APP_ADAPTIVE_ICON = "avTagsValIconAda"
         const val ID_APP_PREDICTIVE_BACK = "avTagsValPreBack"
         const val ID_MSG_FCM = "avTagsValPushFcm"
+        const val ID_MSG_HONOR = "avTagsValPushHo"
         const val ID_MSG_HUAWEI = "avTagsValPushHw"
         const val ID_MSG_XIAOMI = "avTagsValPushMi"
         const val ID_MSG_MEIZU = "avTagsValPushMz"
@@ -159,6 +160,7 @@ internal class AppTagInfo(
             ID_PKG_AAB,
             ID_APP_ADAPTIVE_ICON,
             ID_MSG_FCM,
+            ID_MSG_HONOR,
             ID_MSG_HUAWEI,
             ID_MSG_XIAOMI,
             ID_MSG_MEIZU,

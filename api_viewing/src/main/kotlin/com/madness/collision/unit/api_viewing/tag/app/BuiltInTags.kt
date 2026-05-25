@@ -255,6 +255,13 @@ internal fun builtInTags(): Map<String, AppTagInfo> = listOf(
         expressing = serviceExpressing("com.vivo.push.sdk.service.CommandClientService")
     ).apply { iconKey = "vvp" },
     AppTagInfo(
+        id = AppTagInfo.ID_MSG_HONOR, category = 0.cat, icon = R.drawable.ic_honor_72.icon,
+        label = R.string.av_tag_honor_push.labels, rank = "375",
+        desc = "com.hihonor.push.sdk.HonorMessageService".serviceResultDesc,
+        requisites = pkgServicesRequisite().list,
+        expressing = serviceExpressing("com.hihonor.push.sdk.HonorMessageService")
+    ).apply { iconKey = "hop" },
+    AppTagInfo(
         id = AppTagInfo.ID_MSG_JPUSH, category = 0.cat, icon = R.drawable.ic_aurora_72.icon,
         label = (R.string.av_tag_jpush_normal to R.string.av_settings_tag_jpush).resLabels, rank = "38",
         desc = "cn.jpush.android.service.PushService".serviceResultDesc,
