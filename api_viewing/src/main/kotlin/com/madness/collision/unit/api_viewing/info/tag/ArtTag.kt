@@ -79,6 +79,7 @@ enum class MessagingTag(override val id: String) : ArtTagGroup {
     Ali(Tag.ID_MSG_ALI),
     Baidu(Tag.ID_MSG_BAIDU),
     Getui(Tag.ID_MSG_GETUI),
+    ItgsaVoIP(Tag.ID_MSG_ITGSA_VOIP),
     Jpush(Tag.ID_MSG_JPUSH),
     TPNS(Tag.ID_MSG_TPNS),
     Upush(Tag.ID_MSG_UPUSH),

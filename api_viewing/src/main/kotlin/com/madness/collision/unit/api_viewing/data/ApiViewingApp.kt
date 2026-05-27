@@ -243,7 +243,8 @@ private fun ApiViewingApp.loadThirdPartyPackages() {
         for (path in appPackage.apkPaths) {
             val arr = ApkUtil.checkPkg(path,
                 "kotlin", "androidx.compose",
-                "org.jetbrains.compose", "microsoft.maui.platform", "org.apache.cordova")
+                "org.jetbrains.compose", "microsoft.maui.platform", "org.apache.cordova",
+                "com.voip.service")
             if (pkgArr.size != arr.size) { pkgArr = arr; continue }
             for (i in arr.indices) pkgArr[i] = pkgArr[i] || arr[i]
             if (pkgArr.all { it }) break
@@ -254,6 +255,7 @@ private fun ApiViewingApp.loadThirdPartyPackages() {
             if (pkgArr[2]) DexPackageFlags.BIT_COMPOSE_MULTIPLATFORM else 0,
             if (pkgArr[3]) DexPackageFlags.BIT_MAUI else 0,
             if (pkgArr[4]) DexPackageFlags.BIT_CORDOVA else 0,
+            if (pkgArr[5]) DexPackageFlags.BIT_ITGSA_VOIP else 0,
         )
     }
 }

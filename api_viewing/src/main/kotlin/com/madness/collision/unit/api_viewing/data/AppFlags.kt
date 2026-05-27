@@ -88,7 +88,7 @@ value class DexPackageFlags private constructor(val value: Int) {
         const val REV_MAX: Int = 0b11110
 
         /* The current revision. Increment on changing bits. */
-        const val REV: Int = 4
+        const val REV: Int = 5
 
         const val BIT_NONE: Int = 0
         const val BIT_KOTLIN: Int = 1 shl 0
@@ -96,6 +96,7 @@ value class DexPackageFlags private constructor(val value: Int) {
         const val BIT_COMPOSE_MULTIPLATFORM: Int = 1 shl 2
         const val BIT_MAUI: Int = 1 shl 3
         const val BIT_CORDOVA: Int = 1 shl 4
+        const val BIT_ITGSA_VOIP: Int = 1 shl 5
         const val BIT_MAX: Int = 1 shl 26
 
         val Undefined: DexPackageFlags = DexPackageFlags(UNDEFINED)

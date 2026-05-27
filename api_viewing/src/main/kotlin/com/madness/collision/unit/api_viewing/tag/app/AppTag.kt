@@ -134,6 +134,7 @@ internal class AppTagInfo(
         const val ID_MSG_MEIZU = "avTagsValPushMz"
         const val ID_MSG_OPPO = "avTagsValPushOo"
         const val ID_MSG_VIVO = "avTagsValPushVv"
+        const val ID_MSG_ITGSA_VOIP = "avTagsValPushVip"
         const val ID_MSG_JPUSH = "avTagsValPushJp"
         const val ID_MSG_UPUSH = "avTagsValPushUp"
         const val ID_MSG_TPNS = "avTagsValPushTp"
@@ -166,6 +167,7 @@ internal class AppTagInfo(
             ID_MSG_MEIZU,
             ID_MSG_OPPO,
             ID_MSG_VIVO,
+            ID_MSG_ITGSA_VOIP,
             ID_MSG_JPUSH,
             ID_MSG_UPUSH,
             ID_MSG_TPNS,
