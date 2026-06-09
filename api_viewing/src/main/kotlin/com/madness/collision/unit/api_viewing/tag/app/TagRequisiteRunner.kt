@@ -23,6 +23,7 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.os.Bundle
 import android.os.Handler
+import android.os.HandlerThread
 import android.os.IBinder
 import android.os.Looper
 import android.os.Message
@@ -31,16 +32,46 @@ import android.os.RemoteException
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
+import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeout
-import kotlin.concurrent.thread
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
-@Deprecated("")
+/** Application-level singleton provider, use component-level runner instead where possible. */
+internal object TagRequisiteRunnerProvider {
+    private var runner: TagRequisiteRunner? = null
+    private val runnerMutex = Mutex()
+
+    suspend fun getRunner(context: Context): TagRequisiteRunner {
+        runner?.let { return it }
+        runnerMutex.withLock {
+            val reqRunner = TagRequisiteRunner(context.applicationContext).init()
+            // bind service synchronously
+            try {
+                withTimeout(1500) {
+                    reqRunner.bindAndGetService(context.applicationContext)
+                }
+            } catch (e: TimeoutCancellationException) {
+                e.printStackTrace()
+            } catch (e: Exception) {
+                // bind was unsuccessful (e.g. SecurityException)
+                e.printStackTrace()
+            }
+            return reqRunner.also { runner = it }
+        }
+    }
+}
+
 class TagRequisiteRunner(private val context: Context) {
+
+    typealias ConnCallback = () -> Unit
+
     private var serviceMessenger: Messenger? = null
+    private val serviceConnCallbacks = ArrayDeque<ConnCallback>()
     private val serviceConn = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             // IPC by a messenger
@@ -49,17 +80,15 @@ class TagRequisiteRunner(private val context: Context) {
 
         override fun onServiceDisconnected(name: ComponentName?) {
             serviceMessenger = null
+            serviceConnCallbacks.forEach { callback -> callback() }
         }
     }
-    private var replyLooper: Looper? = null
-    private var replyThread: Thread? = null
+    private var replyThread: HandlerThread? = null
 
     fun init(): TagRequisiteRunner {
-        replyThread = thread(name = "TagReqRunner") {
-            Looper.prepare()
-            replyLooper = Looper.myLooper()
-            Looper.loop()
-        }
+        if (replyThread != null) return this
+        replyThread = HandlerThread("TagReqRunner")
+            .apply { start() }
         return this
     }
 
@@ -73,21 +102,21 @@ class TagRequisiteRunner(private val context: Context) {
                 override fun onDestroy(owner: LifecycleOwner) {
                     owner.lifecycle.removeObserver(this)
                     context.unbindService(serviceConn)
-                    replyLooper?.quitSafely()
-                    replyThread?.interrupt()
+                    replyThread?.quitSafely()
+                    replyThread = null
                 }
             })
         } catch (e: SecurityException) {
             e.printStackTrace()
             context.unbindService(serviceConn)
-            replyLooper?.quitSafely()
-            replyThread?.interrupt()
+            replyThread?.quitSafely()
+            replyThread = null
         }
         return this
     }
 
     /** Unbind the connection after use. */
-    private suspend fun bindAndGetService(context: Context): Pair<ServiceConnection, Messenger?> =
+    suspend fun bindAndGetService(context: Context): Pair<ServiceConnection, Messenger?> =
         suspendCancellableCoroutine { cont ->
             val conn = object : ServiceConnection {
                 override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
@@ -113,14 +142,27 @@ class TagRequisiteRunner(private val context: Context) {
             }
         }
 
-    private suspend inline fun <T> bindService(block: (Messenger) -> T): T? {
+    private inline fun <T> withConnCallback(noinline onDisconnected: () -> Unit, block: () -> T): T {
+        try {
+            serviceConnCallbacks.add(onDisconnected)
+            return block()
+        } finally {
+            serviceConnCallbacks.remove(onDisconnected)
+        }
+    }
+
+    /** Connect to existing service if present, otherwise bind anew and unbind afterward. */
+    private suspend inline fun <T> bindService(
+        noinline onDisconnected: () -> Unit, block: (Messenger) -> T): T? {
         val messenger = serviceMessenger
         if (messenger != null) {
-            return block(messenger)
+            return withConnCallback(onDisconnected) { block(messenger) }
         } else {
             try {
                 val (conn, service) = withTimeout(1500) { bindAndGetService(context) }
-                return service?.let(block).also { context.unbindService(conn) }
+                return withConnCallback(onDisconnected) {
+                    service?.let(block).also { context.unbindService(conn) }
+                }
             } catch (e: TimeoutCancellationException) {
                 e.printStackTrace()
                 return null
@@ -133,15 +175,24 @@ class TagRequisiteRunner(private val context: Context) {
     }
 
     /** Better wrap in a [withTimeout] call. */
-    suspend fun findSuperclass(apks: List<String>, names: Set<String>): Set<String>? =
-        bindService { messenger ->
+    suspend fun findSuperclass(apks: List<String>, names: Set<String>): Set<String>? {
+        var msgContinuation: CancellableContinuation<*>? = null
+        return bindService(
+            onDisconnected = {
+                if (msgContinuation?.isActive == true) {
+                    msgContinuation?.resumeWithException(
+                        IllegalStateException("service connection disconnected unexpectedly!"))
+                }
+            },
+        ) { messenger ->
             suspendCancellableCoroutine { cont ->
+                msgContinuation = cont
                 val msg = Message.obtain(null, 1)
                 msg.data = Bundle().apply {
                     putStringArrayList("apks", ArrayList(apks))
                     putStringArrayList("names", ArrayList(names))
                 }
-                val looper = replyLooper ?: Looper.getMainLooper()
+                val looper = replyThread?.looper ?: Looper.getMainLooper()
                 msg.replyTo = Messenger(Handler(looper) { reply ->
                     if (!cont.isActive) return@Handler true
                     when (reply.what) {
@@ -151,10 +202,13 @@ class TagRequisiteRunner(private val context: Context) {
                     true
                 })
                 try {
-                    messenger.send(msg)
+                    if (cont.isActive) {
+                        messenger.send(msg)
+                    }
                 } catch (e: RemoteException) {
                     cont.resumeWithException(e)
                 }
             }
         }
+    }
 }

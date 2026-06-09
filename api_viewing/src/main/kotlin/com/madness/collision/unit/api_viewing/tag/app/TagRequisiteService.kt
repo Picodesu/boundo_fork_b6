@@ -20,26 +20,40 @@ import android.app.Service
 import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
+import android.os.HandlerThread
 import android.os.IBinder
 import android.os.Looper
 import android.os.Message
 import android.os.Messenger
 import android.os.RemoteException
 import android.util.Log
-import com.madness.collision.unit.api_viewing.info.LoadSuperFinder
+import io.cliuff.boundo.art.apk.dex.AsyncDexLibSuperFinder
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 
-/** Service to run in a separate process to isolate native exceptions. */
-@Deprecated("")
+/** Service to run in a separate process to isolate native exceptions or heavy memory load. */
 class TagRequisiteService : Service() {
-    private val tagMessenger = kotlin.run {
-        val looper = Looper.myLooper()
-            ?: kotlin.run { Looper.prepare(); Looper.myLooper() }
-            ?: Looper.getMainLooper()
-        Messenger(TagRequisiteHandler(looper))
+    private var tagThread: HandlerThread? = null
+    private var tagHandler: Handler? = null
+
+    override fun onCreate() {
+        super.onCreate()
+        tagThread = HandlerThread("TagReqHandler")
+            .apply { start() }
+    }
+
+    override fun onDestroy() {
+        tagThread?.quitSafely()
+        tagHandler = null
+        super.onDestroy()
     }
 
     override fun onBind(intent: Intent?): IBinder? {
-        return tagMessenger.binder
+        val handler = tagHandler ?: kotlin.run {
+            val looper = tagThread?.looper ?: Looper.getMainLooper()
+            TagRequisiteHandler(looper).also { tagHandler = it }
+        }
+        return Messenger(handler).binder
     }
 }
 
@@ -50,7 +64,10 @@ class TagRequisiteHandler(looper: Looper) : Handler(looper) {
                 msg.peekData()?.let {
                     val apks = msg.data.getStringArrayList("apks").orEmpty()
                     val names = msg.data.getStringArrayList("names").orEmpty()
-                    val result = findSuperclass(apks, names)
+                    val result = runCatching { findSuperclass(apks, names) }
+                        .onFailure(Throwable::printStackTrace)
+                        .getOrDefault(null)
+
                     val reply = Message.obtain(null, 1)
                     reply.data = Bundle().apply { putStringArrayList("value", result) }
                     try {
@@ -64,10 +81,8 @@ class TagRequisiteHandler(looper: Looper) : Handler(looper) {
     }
 
     private fun findSuperclass(apks: List<String>, names: List<String>): ArrayList<String> {
-        val finder = LoadSuperFinder()
-        // This method may throw native exception from one of class loader's native methods.
-        // Reported on PixelBuild Android 14 ROM on Pixel 3, root cause unknown.
-        return finder.resolve(apks, names.toSet()).let(::ArrayList)
+        val finder = AsyncDexLibSuperFinder()
+        return runBlocking(Dispatchers.IO) { finder.resolve(apks, names.toSet()) }.let(::ArrayList)
             .also { Log.d("TagRequisiteService", "Found ${it.size} superclass.") }
     }
 }

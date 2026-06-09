@@ -34,7 +34,7 @@ import com.madness.collision.unit.api_viewing.list.AppListService
 import com.madness.collision.unit.api_viewing.tag.inflater.AppTagInflater
 import com.madness.collision.unit.api_viewing.util.ManifestUtil
 import com.madness.collision.util.os.OsUtils
-import io.cliuff.boundo.art.apk.dex.AsyncDexLibSuperFinder
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeout
 
@@ -523,9 +523,22 @@ private fun pkgServicesRequisite(): AppTagInfo.Requisite = AppTagInfo.Requisite(
 
         // services declared in manifests are not guaranteed to be found in DEX files
         val services = app.pkgInfo?.services?.run { mapTo(HashSet(size), ServiceInfo::name) }.orEmpty()
-        val finder = AsyncDexLibSuperFinder()
-        app.serviceFamilyClasses = finder.resolve(app.appPackage.apkPaths, services)
+        val reqRunner = TagRequisiteRunnerProvider.getRunner(res.context)
         // todo reduce service set to only ones of interest, to save more memory
+        app.serviceFamilyClasses = try {
+            withTimeout(20_000) {
+                reqRunner.findSuperclass(app.appPackage.apkPaths, services)
+                    ?: emptySet()
+            }
+        } catch (e: TimeoutCancellationException) {
+            // unrecoverable exceptions in remote also results in timeout
+            e.printStackTrace()
+            emptySet()
+        } catch (e: Exception) {
+            // error with binding or the like
+            e.printStackTrace()
+            emptySet()
+        }
     }
 )
 
