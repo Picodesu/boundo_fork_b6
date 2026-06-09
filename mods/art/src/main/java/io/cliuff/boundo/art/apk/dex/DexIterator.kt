@@ -110,17 +110,19 @@ private fun getDexBytesFlow(path: String, transformer: DexEntryTransformer? = nu
                 } else {
                     entry
                 }
-                try {
-                    ensureActive() // cooperative
-                    // get entry input stream synchronously
-                    val inStream = try {
-                        zip.getInputStream(processEntry)
-                    } catch (e: IOException) {
-                        e.printStackTrace()
-                        continue
-                    }
-                    // process entry input stream asynchronously
-                    jobs += launch {
+                ensureActive() // cooperative
+                // get entry input stream synchronously
+                val inStream = try {
+                    zip.getInputStream(processEntry)
+                } catch (e: IOException) {
+                    e.printStackTrace()
+                    // notify transformer of post-processing
+                    transformer?.postProcessing(processEntry)
+                    continue
+                }
+                // process entry input stream asynchronously
+                jobs += launch {
+                    try {
                         inStream.use { _ ->
                             ensureActive() // cooperative
                             val bufferedStream = inStream.buffered()
@@ -130,11 +132,10 @@ private fun getDexBytesFlow(path: String, transformer: DexEntryTransformer? = nu
                                 send(bytes)
                             }
                         }
+                    } finally {
+                        // notify transformer of post-processing
+                        transformer?.postProcessing(processEntry)
                     }
-                } finally {
-                    // notify transformer of post-processing
-                    transformer?.postProcessing(processEntry)
-                    ensureActive() // cooperative
                 }
             }
             // wait for jobs to close file

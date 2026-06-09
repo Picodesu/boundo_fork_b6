@@ -16,6 +16,7 @@
 
 package io.cliuff.boundo.art.apk.dex
 
+import android.util.Log
 import com.android.tools.smali.dexlib2.Opcodes
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collect
@@ -30,7 +31,19 @@ private fun loadAsyncDexContainer(apkPath: String, minSdk: Int = -1): AsyncDexCo
     return AsyncDexContainer(file, opcodes)
 }
 
+private const val IsDexCollectorEnabled: Boolean = false
+
 class AsyncDexLibSuperFinder {
+    // limit huge async dex processing to cap memory usage
+    private val intensiveLimiter = IntensiveDexEntryTransformer(8 * 1024 * 1024, 2)
+
+    private fun createTransformers(apkPath: String): List<DexEntryTransformer> {
+        // limit async dex processing to reduce memory usage
+        val dexLimiter = LimitDexEntryTransformer(6)
+        val dexCollector = if (IsDexCollectorEnabled) CollectDexEntryTransformer() else null
+        return listOfNotNull(intensiveLimiter, dexLimiter, dexCollector)
+    }
+
     suspend fun resolve(apks: List<String>, names: Set<String>): Set<String> {
         if (apks.isEmpty()) return names
         if (names.isEmpty()) return emptySet()
@@ -38,9 +51,16 @@ class AsyncDexLibSuperFinder {
             "L" + n.replace('.', '/') + ";"
         }
         val superclasses = ArrayList<String>(names.size)
+        val dexTransformers = HashMap<String, DexEntryTransformer>(apks.size)
+
         apk@ for (apkPath in apks) {
-            // limit async dex processing to reduce memory usage
-            val dexEntryTransformer = LimitDexEntryTransformer(3)
+            // nest transformers into a single one
+            val transformers = createTransformers(apkPath)
+            val dexEntryTransformer = transformers.reduce { acc, transformer ->
+                NestedDexEntryTransformer(inner = acc, outer = transformer)
+            }
+            dexTransformers[apkPath] = dexEntryTransformer
+
             // enumerate dex entries in an apk
             loadAsyncDexContainer(apkPath)
                 .getDexFileFlow(dexEntryTransformer)
@@ -59,6 +79,15 @@ class AsyncDexLibSuperFinder {
                 .collect()
             if (superclasses.size == names.size) break@apk
         }
+
+        // log all dex entries' info
+        for ((path, transformer) in dexTransformers) {
+            val nested = transformer as? NestedDexEntryTransformer ?: break
+            val collector = nested.outer as? CollectDexEntryTransformer ?: break
+            val msg = collector.getLogMessage(path)
+            Log.v("AsyncDexLibSuperFinder", msg)
+        }
+
         return names + superclasses
     }
 }

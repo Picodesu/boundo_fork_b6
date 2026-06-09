@@ -94,9 +94,11 @@
     <!-- for all application activities, or with the <activity> tag to supply a banner for a specific activity. -->
     <!-- The banner should be an xhdpi resource with a size of 320 x 180 px. Text must be included in the image. -->
     <!-- Provide separate versions of the banner with text for multiple languages. -->
+    <!-- largeHeap: using a large heap for APK analysis (DEX processing), careful not to abuse it. -->
     <application
         android:name=".main.MainApplication"
         android:taskAffinity=".main"
+        android:largeHeap="true"
         android:allowBackup="true"
         android:description="@string/appDesc"
         android:icon="@mipmap/ic_launcher"
