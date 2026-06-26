@@ -16,7 +16,6 @@
 
 package com.madness.collision.unit.api_viewing.ui.info.tag
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -43,19 +42,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil3.compose.AsyncImage
 import com.madness.collision.ui.theme.MetaAppTheme
 import com.madness.collision.ui.theme.PreviewAppTheme
 import com.madness.collision.unit.api_viewing.R
+import com.madness.collision.unit.api_viewing.info.ExpIcon
 import com.madness.collision.unit.api_viewing.info.tag.ArtTagGroup
 import com.madness.collision.unit.api_viewing.info.tag.MessagingTag
 import com.madness.collision.unit.api_viewing.info.tag.SystemTag
 import com.madness.collision.unit.api_viewing.info.tag.TechnologyTag
+import com.madness.collision.unit.api_viewing.ui.comp.rememberAppIcon
 import com.madness.collision.util.dev.PreviewCombinedColorLayout
 import racra.compose.smooth_corner_rect_library.AbsoluteSmoothCornerShape
 import java.util.EnumMap
@@ -71,7 +72,7 @@ class ExpressTag(
     val id: String,
     val label: String,
     val desc: String?,
-    val icon: ImageBitmap?,
+    val icon: ExpIcon?,
     val activated: Boolean,
 )
 
@@ -194,19 +195,25 @@ private fun ExpressTagGroup(
 
 @Composable
 private fun TagIcon(
-    icon: ImageBitmap?,
+    icon: ExpIcon?,
     activated: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    if (icon != null) {
+    val img = when (icon) {
+        is ExpIcon.Res -> icon.id
+        is ExpIcon.App -> rememberAppIcon(icon.packageName)
+        is ExpIcon.Text -> null
+        null -> null
+    }
+    if (img != null) {
         val colorFilter = remember(activated) {
             if (activated) return@remember null
             val matrix = ColorMatrix().apply { setToSaturation(0f) }
             ColorFilter.colorMatrix(matrix)
         }
-        Image(
+        AsyncImage(
             modifier = modifier.size(27.dp),
-            bitmap = icon,
+            model = img,
             contentDescription = null,
             colorFilter = colorFilter,
         )

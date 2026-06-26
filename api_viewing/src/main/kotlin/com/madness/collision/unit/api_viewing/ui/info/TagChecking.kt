@@ -16,13 +16,12 @@
 
 package com.madness.collision.unit.api_viewing.ui.info
 
-import android.graphics.Bitmap
 import androidx.compose.animation.*
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Label
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
@@ -35,7 +34,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -49,15 +47,26 @@ import com.madness.collision.unit.api_viewing.data.ApiViewingApp
 import com.madness.collision.unit.api_viewing.data.AppPackageInfo
 import com.madness.collision.unit.api_viewing.data.ModuleInfo
 import com.madness.collision.unit.api_viewing.info.AppType
-import com.madness.collision.unit.api_viewing.info.ExpressedTag
+import com.madness.collision.unit.api_viewing.info.ExpIcon
 import com.madness.collision.unit.api_viewing.list.LocalAppSwitcherHandler
 import com.madness.collision.unit.api_viewing.tag.app.AppTagInfo
+import com.madness.collision.unit.api_viewing.ui.comp.rememberAppIcon
 import com.madness.collision.unit.api_viewing.ui.info.tag.PkgArchDetails
 import com.madness.collision.util.ui.autoMirrored
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import racra.compose.smooth_corner_rect_library.AbsoluteSmoothCornerShape
+
+internal typealias ExpressedTag = MockExpressedTag
+
+internal class MockExpressedTag(
+    val intrinsic: AppTagInfo,
+    val label: String,
+    val desc: String?,
+    val icon: ExpIcon?,
+    val activated: Boolean,
+)
 
 @Composable
 internal fun TagDetailsList(
@@ -73,7 +82,6 @@ internal fun TagDetailsList(
             expressed.intrinsic.id + tags[index - 1].intrinsic.id
         }
         key(key) {
-            val info = expressed.info
             val activated = expressed.activated
             val isAi = expressed.intrinsic.id == AppTagInfo.ID_APP_ADAPTIVE_ICON
             val is64Bit = expressed.intrinsic.id == AppTagInfo.ID_PKG_64BIT
@@ -114,7 +122,7 @@ internal fun TagDetailsList(
                 TagItem(
                     title = expressed.label,
                     desc = expressed.desc,
-                    icon = info.icon?.bitmap,
+                    icon = expressed.icon,
                     chevron = chevron,
                     itemColor = itemColor,
                     isIconActivated = activated,
@@ -153,7 +161,7 @@ internal fun TagDetailsList(
                 TagItemDeactivated(
                     title = expressed.label,
                     desc = expressed.desc,
-                    icon = info.icon?.bitmap,
+                    icon = expressed.icon,
                     modifier = Modifier
                         .let { if (index == 0) it.padding(top = 8.dp) else it }
                         .let { if (index == tags.lastIndex) it.padding(bottom = 8.dp) else it }
@@ -168,7 +176,7 @@ internal fun TagDetailsList(
 private fun TagItem(
     title: String,
     desc: String?,
-    icon: Bitmap?,
+    icon: ExpIcon?,
     chevron: ImageVector?,
     itemColor: Color,
     isIconActivated: Boolean,
@@ -218,7 +226,7 @@ private fun TagItem(
 
 @Composable
 private fun TagItemDeactivated(
-    title: String, desc: String?, icon: Bitmap?, modifier: Modifier = Modifier
+    title: String, desc: String?, icon: ExpIcon?, modifier: Modifier = Modifier
 ) {
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).then(modifier)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -247,23 +255,29 @@ private fun TagItemDeactivated(
 }
 
 @Composable
-private fun TagItemIcon(icon: Bitmap?, activated: Boolean) {
-    if (icon != null) {
-        val colorFilter = remember {
+private fun TagItemIcon(icon: ExpIcon?, activated: Boolean) {
+    val img = when (icon) {
+        is ExpIcon.Res -> icon.id
+        is ExpIcon.App -> rememberAppIcon(icon.packageName)
+        is ExpIcon.Text -> null
+        null -> null
+    }
+    if (img != null) {
+        val colorFilter = remember(activated) {
             if (activated) return@remember null
             val matrix = ColorMatrix().apply { setToSaturation(0f) }
             ColorFilter.colorMatrix(matrix)
         }
-        Image(
+        AsyncImage(
             modifier = Modifier.size(16.dp),
-            bitmap = icon.asImageBitmap(),
+            model = img,
             contentDescription = null,
             colorFilter = colorFilter,
         )
     } else {
         Icon(
-            modifier = Modifier.size(16.dp).autoMirrored(),
-            imageVector = Icons.Outlined.Label,
+            modifier = Modifier.size(16.dp),
+            imageVector = Icons.AutoMirrored.Outlined.Label,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurface.copy(alpha = if (activated) 0.75f else 0.4f),
         )

@@ -76,6 +76,7 @@ import com.madness.collision.unit.api_viewing.info.ExpIcon
 import com.madness.collision.unit.api_viewing.info.ExpTag
 import com.madness.collision.unit.api_viewing.seal.SealMaker
 import com.madness.collision.unit.api_viewing.ui.comp.ArtMapper
+import com.madness.collision.unit.api_viewing.ui.comp.rememberAppIcon
 import com.madness.collision.unit.api_viewing.ui.comp.sealFileOf
 import com.madness.collision.unit.api_viewing.ui.upd.item.AppApiUpdate
 import com.madness.collision.unit.api_viewing.ui.upd.item.AppInstallVersion
@@ -514,7 +515,7 @@ private fun AppTagRow(modifier: Modifier = Modifier, tagGroup: AppTagGroup) {
 private fun ExpIcon(icon: ExpIcon) {
     when (icon) {
         is ExpIcon.Res -> ImageTag(image = icon.id)
-        is ExpIcon.App -> ImageTag(image = icon.bitmap)
+        is ExpIcon.App -> ImageTag(image = rememberAppIcon(icon.packageName))
         is ExpIcon.Text -> TextTag(text = icon.value.toString())
     }
 }

@@ -16,17 +16,22 @@
 
 package com.madness.collision.unit.api_viewing.ui.comp
 
+import android.content.pm.PackageManager
+import android.util.Log
+import androidx.collection.LruCache
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.madness.collision.chief.app.stateOf
+import com.madness.collision.misc.PackageCompat
 import com.madness.collision.unit.api_viewing.data.VerInfo
 import com.madness.collision.unit.api_viewing.seal.SealMaker
 import com.madness.collision.unit.api_viewing.ui.list.AppApiMode
@@ -34,6 +39,9 @@ import com.madness.collision.unit.api_viewing.ui.upd.AppItemStyle
 import com.madness.collision.unit.api_viewing.ui.upd.AppTagGroup
 import com.madness.collision.unit.api_viewing.ui.upd.LocalAppItemStyle
 import com.madness.collision.unit.api_viewing.ui.upd.item.GuiArt.Identity
+import io.cliuff.boundo.conf.coil.AppIconPackageInfo
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @Immutable
 internal data class GuiArtApp(
@@ -102,4 +110,30 @@ internal fun AppItem(
         style = style,
         onClick = onClick,
     )
+}
+
+
+// App icon cache for lazy layouts to avoid repeated loading.
+private val LazyAppIcons = LruCache<String, AppIconPackageInfo>(8)
+private operator fun <K : Any, V : Any> LruCache<K, V>.set(key: K, value: V) = put(key, value)
+
+@Composable
+internal fun rememberAppIcon(packageName: String): AppIconPackageInfo? {
+    val context = LocalContext.current
+    val icPkgInfo: AppIconPackageInfo? by produceState(null, packageName) {
+        LazyAppIcons[packageName]?.let { cache ->
+            value = cache
+            return@produceState
+        }
+        withContext(Dispatchers.IO) {
+            try {
+                val pkg = PackageCompat.getInstalledPackage(context.packageManager, packageName)
+                value = pkg?.applicationInfo?.let { AppIconPackageInfo(pkg, it) }
+                    ?.also { icon -> LazyAppIcons[packageName] = icon }
+            } catch (_: PackageManager.NameNotFoundException) {
+                Log.w("rememberAppIcon", "Package not found: $packageName")
+            }
+        }
+    }
+    return icPkgInfo
 }

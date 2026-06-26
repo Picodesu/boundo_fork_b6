@@ -52,17 +52,16 @@ import com.madness.collision.main.showPage
 import com.madness.collision.unit.api_viewing.data.*
 import com.madness.collision.unit.api_viewing.env.GooglePlayAppInfoOwner
 import com.madness.collision.unit.api_viewing.info.AppInfo
-import com.madness.collision.unit.api_viewing.info.ExpressedTag
 import com.madness.collision.unit.api_viewing.seal.SealMaker
 import com.madness.collision.unit.api_viewing.seal.SealManager
 import com.madness.collision.unit.api_viewing.tag.app.AppTagInfo
 import com.madness.collision.unit.api_viewing.tag.app.AppTagManager
-import com.madness.collision.unit.api_viewing.tag.inflater.AppTagInflater
 import com.madness.collision.unit.api_viewing.ui.comp.sealFileOf
 import com.madness.collision.unit.api_viewing.ui.info.AppDetailsContent
 import com.madness.collision.unit.api_viewing.ui.info.AppInfoViewModel
 import com.madness.collision.unit.api_viewing.ui.info.AppSwitcher
 import com.madness.collision.unit.api_viewing.ui.info.AppSwitcherHandler
+import com.madness.collision.unit.api_viewing.ui.info.ExpressedTag
 import com.madness.collision.unit.api_viewing.ui.info.LibPage
 import com.madness.collision.unit.api_viewing.ui.info.TagDetailsList
 import com.madness.collision.unit.api_viewing.ui.info.tag.ExpressTag
@@ -476,13 +475,10 @@ private fun AppInfoPreview() {
         ).map { t.getValue(it) }
         val names = arrayOf(
             "Google Play", "Adaptive icon", "Jetpack Compose", "Flutter", "Android App Bundle")
-        val infoList = names.map {
-            AppTagInflater.TagInfo(name = it, icon = AppTagInflater.TagInfo.Icon(), rank = "0")
-        }
-        infoList.mapIndexed { i, info ->
-            val label = infoList[i].name ?: "Unknown"
+        names.indices.map { i ->
+            val label = names[i]
             val desc = "$label tag description $i"
-            ExpressedTag(tags[i], label, info, desc, i > 1 && i % 2 == 0)
+            ExpressedTag(tags[i], label, desc, null, i > 1 && i % 2 == 0)
         }
     }
     val color = if (isSystemInDarkTheme()) Color(0xFF424942) else Color(0xffdefbde)
