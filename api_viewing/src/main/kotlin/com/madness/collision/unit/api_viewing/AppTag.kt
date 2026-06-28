@@ -21,9 +21,7 @@ import android.content.SharedPreferences
 import com.madness.collision.unit.api_viewing.data.ApiViewingApp
 import com.madness.collision.unit.api_viewing.tag.app.AppTagInfo
 import com.madness.collision.unit.api_viewing.tag.app.AppTagManager
-import com.madness.collision.unit.api_viewing.tag.app.get
 import com.madness.collision.unit.api_viewing.tag.app.toExpressible
-import com.madness.collision.unit.api_viewing.tag.inflater.AppTagInflater
 import com.madness.collision.unit.api_viewing.util.PrefUtil
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.catch
@@ -44,34 +42,6 @@ internal object AppTag {
     private val displayingTagsPrivate = mutableMapOf<String, TriStateSelectable>()
     private val displayingTags: TagStateMap = TagStateMap(displayingTagsPrivate)
     private val tagReqMutex: MutableMap<String, Mutex> = hashMapOf()
-
-    fun clearCache() = AppTagInflater.clearCache()
-
-    fun clearContext() = AppTagInflater.clearContext()
-
-    fun ensureAllTagIcons(context: Context) {
-        ensureTagIcons(context, null)
-    }
-
-    // prepare icons
-    fun ensureTagIcons(context: Context) {
-        ensureTagIcons(context) { displayingTags[it.id].isSelected }
-    }
-
-    // prepare icons
-    fun ensureTagIcons(context: Context, filter: ((AppTagInfo) -> Boolean)?) {
-        for (id in AppTagInfo.IdGroup.STATIC_ICON) {
-            val tagInfo = AppTagManager.tags[id] ?: continue
-            if (filter != null && filter(tagInfo).not()) continue
-            val iconKey = tagInfo.iconKey ?: continue
-            val icon = tagInfo.icon
-            when {
-                icon.drawableResId != null -> AppTagInflater.ensureTagIcon(context, iconKey, icon.drawableResId)
-                icon.drawable != null -> AppTagInflater.ensureTagIcon(context, iconKey, icon.drawable)
-                icon.pkgName != null -> AppTagInflater.ensureTagIcon(context, icon.pkgName)
-            }
-        }
-    }
 
     // todo some requisites should be checked only once when loading settings
     suspend fun ensureRequisites(context: Context, app: ApiViewingApp): AppTagInfo.Resources {
@@ -167,36 +137,8 @@ internal object AppTag {
         return displayingTags[id].isSelected && express(res)
     }
 
-    fun getTagViewInfo(tagInfo: AppTagInfo, res: AppTagInfo.Resources, context: Context, labelSelector: (AppTagInfo) -> AppTagInfo.Label?): AppTagInflater.TagInfo? {
-        // normal label or dynamic label
-        val label = labelSelector(tagInfo) ?: kotlin.run {
-            val string = if (tagInfo.label.isDynamic)
-                tagInfo.requisites?.firstNotNullOfOrNull { res.dynamicRequisiteLabels[it.id] } else null
-            AppTagInfo.Label(string = string)
-        }
-        val tagIcon = tagInfo.icon
-        // support dynamic icon
-        val (iconBitmap, isExternalIcon) = when {
-            tagIcon.drawableResId != null || tagIcon.drawable != null -> tagInfo.iconKey to false
-            tagIcon.text != null -> null to false
-            tagIcon.pkgName != null -> tagIcon.pkgName to true
-            tagIcon.isDynamic -> tagInfo.requisites?.firstNotNullOfOrNull { res.dynamicRequisiteIconKeys[it.id] } to true
-            else -> null to false
-        }.let { (iconKey, isExternal) ->
-            val ic = if (iconKey == null) null else AppTagInflater.tagIcons[iconKey]
-            ic to isExternal
-        }
-        val icon = AppTagInflater.TagInfo.Icon(iconBitmap, tagIcon.text.get(context), isExternalIcon)
-        // terminate if no label string available
-        if (label.stringResId == null && label.string == null) return null
-        // construct tag info object
-        return AppTagInflater.TagInfo(nameResId = label.stringResId,
-            name = label.string?.toString(), icon = icon, rank = tagInfo.rank)
-    }
-
     // Filtering: selected matches expressing, or ExpressibleTag.express().
     suspend fun filterTags(context: Context, app: ApiViewingApp): Boolean {
-        ensureTagIcons(context)
         val res = ensureRequisitesAsync(context, app, null)
         return AppTagManager.tags.any { it.value.express(res) }
     }

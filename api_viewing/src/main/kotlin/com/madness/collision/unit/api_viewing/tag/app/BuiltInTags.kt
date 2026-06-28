@@ -31,7 +31,6 @@ import com.madness.collision.unit.api_viewing.data.ArchiveEntryFlags
 import com.madness.collision.unit.api_viewing.data.DexPackageFlags
 import com.madness.collision.unit.api_viewing.info.AppType
 import com.madness.collision.unit.api_viewing.list.AppListService
-import com.madness.collision.unit.api_viewing.tag.inflater.AppTagInflater
 import com.madness.collision.unit.api_viewing.util.ManifestUtil
 import com.madness.collision.util.os.OsUtils
 import kotlinx.coroutines.TimeoutCancellationException
@@ -582,23 +581,6 @@ private fun pkgInstallerRequisite(): AppTagInfo.Requisite = AppTagInfo.Requisite
             app.pkgInstaller = null
             return@Requisite
         }
-        // real name should be used when showing tag name
-        // use package name when showing tag icon only
-//        val ai = MiscApp.getApplicationInfo(context, packageName = installer)
-//        val installerName = ai?.loadLabel(context.packageManager)?.toString() ?: ""
-//        val name = if (installerName.isNotEmpty()) {
-//            installerName
-//        } else {
-//            val installerAndroid = ApiViewingApp.packagePackageInstaller
-//            when (installer) {
-//                installerGPlay -> context.getString(MyR.string.apiDetailsInstallGP)
-//                installerAndroid -> context.getString(MyR.string.apiDetailsInstallPI)
-//                "null" -> null
-//                else -> null
-//            }
-//        }
-        // initialize installer that is neither Google Play Store nor Android Package Installer
-        AppTagInflater.ensureTagIcon(context, installer)
         app.pkgInstaller = installer
         val reqId = "ReqPkgInstaller"
         res.dynamicRequisiteLabels[reqId] = installer

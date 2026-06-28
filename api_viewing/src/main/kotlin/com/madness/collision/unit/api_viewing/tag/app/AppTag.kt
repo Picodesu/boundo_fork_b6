@@ -36,6 +36,7 @@ internal class AppTagInfo(
     val valueExpressing: ValueExpressing? = null,
     @Deprecated("") val expressing: Expressing,
 ) : Expression {
+    @Deprecated("")
     var iconKey: String? = null
 
     override fun express(): Boolean {
@@ -146,35 +147,6 @@ internal class AppTagInfo(
     object IdGroup {
         @Deprecated("Use AppTagManager.BuiltInTags instead")
         val BUILT_IN: List<String> = AppTagManager.BuiltInTags.keys.toList()
-        val STATIC_ICON: List<String> = listOf(
-            ID_TECH_FLUTTER,
-            ID_TECH_REACT_NATIVE,
-            ID_TECH_XAMARIN,
-            ID_TECH_MAUI,
-            ID_TECH_CORDOVA,
-            ID_TECH_KOTLIN,
-            ID_TECH_X_COMPOSE,
-            ID_TECH_COMPOSE_CMP,
-            ID_APP_HIDDEN,
-            ID_APP_SYSTEM,
-            ID_TYPE_WEB_APK,
-            ID_PKG_AAB,
-            ID_APP_ADAPTIVE_ICON,
-            ID_MSG_FCM,
-            ID_MSG_HONOR,
-            ID_MSG_HUAWEI,
-            ID_MSG_XIAOMI,
-            ID_MSG_MEIZU,
-            ID_MSG_OPPO,
-            ID_MSG_VIVO,
-            ID_MSG_ITGSA_VOIP,
-            ID_MSG_JPUSH,
-            ID_MSG_UPUSH,
-            ID_MSG_TPNS,
-            ID_MSG_ALI,
-            ID_MSG_BAIDU,
-            ID_MSG_GETUI,
-        )
     }
 }
 

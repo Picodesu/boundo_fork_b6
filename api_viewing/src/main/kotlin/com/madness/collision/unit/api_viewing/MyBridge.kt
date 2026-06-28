@@ -71,11 +71,9 @@ class ApiViewingAccessorImpl : ApiViewingAccessor {
     }
 
     override fun clearTags() {
-        AppTag.clearCache()
     }
 
     override fun clearContext() {
-        AppTag.clearContext()
     }
 
     /**
