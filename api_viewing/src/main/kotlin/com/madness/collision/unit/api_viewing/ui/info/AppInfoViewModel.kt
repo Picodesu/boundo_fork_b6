@@ -17,14 +17,14 @@
 package com.madness.collision.unit.api_viewing.ui.info
 
 import android.content.Context
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.madness.collision.unit.api_viewing.data.ApiViewingApp
 import com.madness.collision.unit.api_viewing.data.repo.ArtTagRepoImpl
 import com.madness.collision.unit.api_viewing.data.repo.ArtTagRepository
-import com.madness.collision.unit.api_viewing.info.ExpressedTag
+import com.madness.collision.unit.api_viewing.info.FullExpTag
 import com.madness.collision.unit.api_viewing.list.AppInfoUiState
+import com.madness.collision.unit.api_viewing.tag.app.AppTagManager
 import com.madness.collision.unit.api_viewing.ui.info.tag.ExpressGroupTag
 import com.madness.collision.unit.api_viewing.ui.info.tag.ExpressTag
 import kotlinx.coroutines.Dispatchers
@@ -70,15 +70,16 @@ internal class AppInfoViewModel : ViewModel() {
         tagExpJob = viewModelScope.launch(Dispatchers.Default) {
             initJob?.join()
             val tagRepo = tagRepo ?: return@launch
-            tagRepo.express(app)
+            tagRepo.getDetailedTags(app)
                 .onEach { tags ->
                     // partition tags into group/classic ones, by ExpressGroupTag lookup
                     val gTagIds = ExpressGroupTag.Groups.flatMapTo(HashSet()) { it.value }
-                    val (groupTags, classicTags) = tags.partition { it.intrinsic.id in gTagIds }
+                    val (groupTags, classicTags) = tags.partition { it.id in gTagIds }
 
-                    val expTags = groupTags.map(ExpressedTag::toExpTag)
+                    val expTags = groupTags.map(FullExpTag::toExpTag)
+                    val legacyTags = classicTags.map(FullExpTag::toLegacyTag)
                     mutUiState.update { currValue ->
-                        currValue.copy(tags = classicTags, expTags = expTags)
+                        currValue.copy(tags = legacyTags, expTags = expTags)
                     }
                 }
                 .launchIn(this)
@@ -86,11 +87,10 @@ internal class AppInfoViewModel : ViewModel() {
     }
 }
 
-internal fun ExpressedTag.toExpTag() =
-    ExpressTag(
-        id = intrinsic.id,
-        label = label,
-        desc = desc,
-        icon = info.icon?.bitmap?.asImageBitmap(),
-        activated = activated,
-    )
+internal fun FullExpTag.toExpTag() =
+    ExpressTag(id = id, label = label, desc = desc, icon = icon, activated = activated)
+
+internal fun FullExpTag.toLegacyTag() = run {
+    val t = AppTagManager.tags.getValue(id)
+    MockExpressedTag(intrinsic = t, label = label, desc = desc, icon = icon, activated = activated)
+}

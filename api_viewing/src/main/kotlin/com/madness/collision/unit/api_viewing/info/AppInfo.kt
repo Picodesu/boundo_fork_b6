@@ -17,19 +17,13 @@
 package com.madness.collision.unit.api_viewing.info
 
 import android.content.Context
-import android.content.Intent
-import android.content.pm.PackageManager
-import android.provider.Settings
 import android.text.format.Formatter
 import com.madness.collision.unit.api_viewing.AppTag
 import com.madness.collision.unit.api_viewing.data.ApiViewingApp
 import com.madness.collision.unit.api_viewing.data.AppPackage
-import com.madness.collision.unit.api_viewing.list.AppListService
+import com.madness.collision.unit.api_viewing.info.tag.SystemTag
 import com.madness.collision.unit.api_viewing.tag.app.AppTagInfo
 import com.madness.collision.unit.api_viewing.tag.app.AppTagManager
-import com.madness.collision.unit.api_viewing.tag.app.get
-import com.madness.collision.unit.api_viewing.tag.app.toExpressible
-import com.madness.collision.unit.api_viewing.tag.inflater.AppTagInflater
 import com.madness.collision.util.os.OsUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -42,92 +36,53 @@ import java.util.TreeSet
 import kotlin.io.path.Path
 import kotlin.io.path.name
 
-internal class ExpressedTag(
-    val intrinsic: AppTagInfo,
-    val label: String,
-    val info: AppTagInflater.TagInfo,
-    val desc: String?,
-    val activated: Boolean,
-)
-
 internal object AppInfo {
-    private fun getTagViewInfo(tag: AppTagInfo, res: AppTagInfo.Resources, context: Context) = run m@{
-        if (tag.requisites?.all { it.checker(res) } == false) return@m null
-        val (expVal, express) = tag.toExpressible().setRes(res).run { expressValueOrNull() to express() }
-        val viewInfo = AppTag.getTagViewInfo(tag, res, context) {
-            // use express value as tag label
-            if (expVal != null) AppTagInfo.Label(string = expVal)
-            else it.label.run { if (express) (full ?: normal) else normal }
-        }
-        viewInfo ?: return@m null
-        val desc = tag.desc?.checkResultDesc?.let { chk -> chk(res).get(context)?.toString() }
-        (tag to viewInfo) to (express to desc)
-    }
 
-    private fun getExpressedTags(tags: List<AppTagInfo>, res: AppTagInfo.Resources, context: Context)
-            : List<ExpressedTag> {
-        val rawList = tags.mapNotNull { getTagViewInfo(it, res, context) }
-        val (list, expressList) = rawList.unzip()
-        // g-play is subset of package installer
-        val playIndex = list.indexOfFirst { it.first.id == AppTagInfo.ID_APP_INSTALLER_PLAY }
-        val removeIndex = if (expressList.getOrNull(playIndex)?.first != true) playIndex
-        else list.indexOfFirst { it.first.id == AppTagInfo.ID_APP_INSTALLER }
-        val infoList = list.filterIndexed { i, _ -> i != removeIndex }
-        val ex = expressList.filterIndexed { i, _ -> i != removeIndex }
-        val listService = AppListService()
-        val pkgRegex = """[\w.]+""".toRegex()
-        return infoList.zip(ex) { tagInfo, express ->
-            val info = tagInfo.second
-            val activated = express.first
-            val label = run {
-                if (activated && info.name?.matches(pkgRegex) == true) {
-                    return@run listService.getInstallerName(context, info.name)
-                }
-                info.name ?: info.nameResId?.let { context.getString(it) } ?: "Unknown"
-            }
-            ExpressedTag(tagInfo.first, label, tagInfo.second, express.second, express.first)
+    private fun tagsByStage(app: ApiViewingApp, context: Context, reqForAll: Boolean = false) = flow {
+        val ensureRequisitesAsync = when {
+            reqForAll -> AppTag::ensureRequisitesForAllAsync
+            else -> AppTag::ensureRequisitesAsync
         }
-    }
-
-    suspend fun expressTags(app: ApiViewingApp, context: Context, updateValue: (List<ExpressedTag>) -> Unit) {
-        val allTags = AppTagManager.tags.values
         val emptyRes = AppTagInfo.Resources(context, app)
-        // init tags and icons that do not have requisites or are satisfied first
-        val selTags = allTags.filter { i ->
-            i.requisites ?: return@filter true
-            i.requisites.all { it.checker(emptyRes) }
-        }
-        val selTagIdSet = selTags.mapTo(HashSet(selTags.size)) { it.id }
-        AppTag.ensureTagIcons(context) { it.id in selTagIdSet }
-        val update1 = getExpressedTags(selTags, emptyRes, context).sortedBy { it.intrinsic.rank }
-        updateValue(update1)
-
-        val tags = AppTagManager.tags
-        AppTag.ensureAllTagIcons(context)
-        var updates = update1
-        AppTag.ensureRequisitesForAllAsync(context, app) { _, ids, res ->
-            val reqTags = ids.mapNotNull { id -> tags[id]?.takeIf { it.id !in selTagIdSet } }
-            updates = getExpressedTags(reqTags, res, context) + updates
-            val updatedValue = updates.sortedBy { it.intrinsic.rank }
-            updateValue(updatedValue)
-        }
-    }
-
-    private fun tagsByStage(app: ApiViewingApp, context: Context) = flow {
-        // inflate tags that do not have requisite first
+        // inflate tags that do not have requisites or are satisfied first
         val directTagIds = AppTagManager.tags.mapNotNull { (id, tag) ->
-            id.takeIf { tag.requisites == null }
+            id.takeIf { tag.requisites == null || tag.requisites.all { it.checker(emptyRes) } }
         }
-        emit(directTagIds to AppTagInfo.Resources(context, app))
+        emit(directTagIds to emptyRes)
+
         // ensure resources and inflate requisite tags
         val inflatedTagIds = directTagIds.toHashSet()
-        val res = AppTag.ensureRequisitesAsync(context, app) { _, tagIds, res ->
+        val res = ensureRequisitesAsync(context, app) { _, tagIds, res ->
             inflatedTagIds.addAll(tagIds)
             emit(tagIds to res)
         }
         // inflate any tag left (should be none)
         val leftTagIds = (AppTagManager.tags.keys - inflatedTagIds)
         if (leftTagIds.isNotEmpty()) emit(leftTagIds to res)
+    }
+
+    /** Tags to display in app info. */
+    fun getDetailedExpTags(app: ApiViewingApp, context: Context): Flow<List<FullExpTag>> {
+        val mapToExp = { tags: Collection<String>, res: AppTagInfo.Resources ->
+            // Tag inflating: selected and expressed true (no anti-ed tag icon support yet).
+            tags.mapNotNull(AppTagManager.tags::get)
+                // make sure all requisites are satisfied
+                .filter { tag -> tag.requisites.orEmpty().all { req -> req.checker(res) } }
+                .mapNotNull { tag -> tag.toExpTagOrNull(res) }
+                // hide inactivated package installer tags
+                .dropWhile { expTag ->
+                    when (expTag.id) {
+                        SystemTag.GooglePlayStore.id -> !expTag.activated
+                        SystemTag.PackageInstaller.id -> !expTag.activated
+                        else -> false
+                    }
+                }
+        }
+        val aggregateTags = TreeSet<FullExpTag>(compareBy(ExpTag::rank))
+        return tagsByStage(app, context, reqForAll = true)
+            .map { (tags, res) -> mapToExp(tags, res) }
+            .map { tags -> aggregateTags.addAll(tags); aggregateTags.toList() }
+            .flowOn(Dispatchers.Default)
     }
 
     /** Tags to display in app list. */

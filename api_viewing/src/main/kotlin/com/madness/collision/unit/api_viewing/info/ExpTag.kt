@@ -16,14 +16,14 @@
 
 package com.madness.collision.unit.api_viewing.info
 
-import android.graphics.Bitmap
+import com.madness.collision.unit.api_viewing.list.AppListService
 import com.madness.collision.unit.api_viewing.tag.app.AppTagInfo
 import com.madness.collision.unit.api_viewing.tag.app.get
-import com.madness.collision.unit.api_viewing.tag.inflater.AppTagInflater
+import com.madness.collision.unit.api_viewing.tag.app.toExpressible
 
 sealed interface ExpIcon {
     data class Res(val id: Int) : ExpIcon
-    data class App(val packageName: String, val bitmap: Bitmap) : ExpIcon
+    data class App(val packageName: String) : ExpIcon
     data class Text(val value: CharSequence) : ExpIcon
 }
 
@@ -39,9 +39,12 @@ data class CompactExpTag(
 ) : ExpTag
 
 internal data class FullExpTag(
-    val label: AppTagInfo.Label,
+    val id: String,
+    val label: String,
+    val desc: String?,
     override val icon: ExpIcon,
     override val rank: String,
+    val activated: Boolean,
 ) : ExpTag
 
 
@@ -49,16 +52,41 @@ internal fun AppTagInfo.toCompactTag(res: AppTagInfo.Resources): CompactExpTag? 
     return CompactExpTag(icon = getIcon(res) ?: return null, rank = rank)
 }
 
-internal fun AppTagInfo.toFullTag(label: AppTagInfo.Label?, res: AppTagInfo.Resources): FullExpTag? {
-    // normal label or dynamic label
-    val labelOrDynamic = label ?: run label@{
-        if (!this.label.isDynamic) return@label AppTagInfo.Label()
-        val str = requisites?.firstNotNullOfOrNull { res.dynamicRequisiteLabels[it.id] }
-        AppTagInfo.Label(string = str)
+internal fun AppTagInfo.toExpTagOrNull(res: AppTagInfo.Resources): FullExpTag? {
+    val tag = this
+    val desc = tag.desc?.checkResultDesc?.invoke(res)
+    val (expVal, express) = tag.toExpressible().setRes(res).run {
+        expressValueOrNull() to express()
     }
-    // terminate if no label string available
-    if (labelOrDynamic.run { stringResId == null && string == null }) return null
-    return FullExpTag(label = labelOrDynamic, icon = getIcon(res) ?: return null, rank = rank)
+    // normal label or dynamic label
+    val labelOrDynamic = when {
+        tag.label.isDynamic -> getDynamicLabel(res)
+        // use express value as tag label
+        expVal != null -> AppTagInfo.Label(string = expVal)
+        express -> tag.label.run { full ?: normal }
+        else -> tag.label.normal
+    }
+    return FullExpTag(
+        id = id,
+        label = labelOrDynamic.get(res.context)?.toString() ?: return null,
+        desc = desc?.get(res.context)?.toString(),
+        icon = getIcon(res) ?: return null,
+        rank = rank,
+        activated = express
+    )
+}
+
+private fun AppTagInfo.getDynamicLabel(res: AppTagInfo.Resources): AppTagInfo.Label? {
+    val str = requisites?.firstNotNullOfOrNull { res.dynamicRequisiteLabels[it.id] }
+    if (str == null) return null
+    // replace package installer with real name
+    val pkgRegex = """[\w.]+""".toRegex()
+    val labelString = if (str.matches(pkgRegex)) {
+        AppListService().getInstallerName(res.context, str)
+    } else {
+        str
+    }
+    return AppTagInfo.Label(string = labelString)
 }
 
 private fun AppTagInfo.getIcon(res: AppTagInfo.Resources): ExpIcon? {
@@ -67,10 +95,10 @@ private fun AppTagInfo.getIcon(res: AppTagInfo.Resources): ExpIcon? {
         icon.drawableResId != null /*|| icon.drawable != null*/ -> ExpIcon.Res(icon.drawableResId)
         icon.text != null -> ExpIcon.Text(icon.text.get(res.context) ?: "")
         icon.pkgName != null ->
-            ExpIcon.App(icon.pkgName, AppTagInflater.tagIcons[icon.pkgName] ?: return null)
+            ExpIcon.App(icon.pkgName)
         icon.isDynamic -> requisites
             ?.firstNotNullOfOrNull { res.dynamicRequisiteIconKeys[it.id] }
-            ?.let { k -> ExpIcon.App(k, AppTagInflater.tagIcons[k] ?: return null) }
+            ?.let { k -> ExpIcon.App(k) }
         else -> null
     }
 }

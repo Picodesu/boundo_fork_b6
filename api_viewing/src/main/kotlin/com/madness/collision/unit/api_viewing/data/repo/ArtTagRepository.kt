@@ -19,13 +19,11 @@ package com.madness.collision.unit.api_viewing.data.repo
 import android.content.Context
 import com.madness.collision.unit.api_viewing.data.ApiViewingApp
 import com.madness.collision.unit.api_viewing.info.AppInfo
-import com.madness.collision.unit.api_viewing.info.ExpressedTag
-import kotlinx.coroutines.Dispatchers
+import com.madness.collision.unit.api_viewing.info.ExpTag
+import com.madness.collision.unit.api_viewing.info.FullExpTag
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.buffer
-import kotlinx.coroutines.flow.channelFlow
-import kotlinx.coroutines.flow.flowOn
 
 /**
  * Changelog 2026
@@ -35,18 +33,19 @@ import kotlinx.coroutines.flow.flowOn
 /** App tag repository. */
 internal interface ArtTagRepository {
     /** @return a flow of updated tag list. */
-    fun express(app: ApiViewingApp): Flow<List<ExpressedTag>>
+    fun getOverviewTags(app: ApiViewingApp): Flow<List<ExpTag>>
+    fun getDetailedTags(app: ApiViewingApp): Flow<List<FullExpTag>>
 }
 
 internal class ArtTagRepoImpl(private val context: Context) : ArtTagRepository {
 
-    override fun express(app: ApiViewingApp): Flow<List<ExpressedTag>> {
-        return channelFlow {
-            AppInfo.expressTags(app, context) { tags ->
-                trySend(tags)
-            }
-        }
-            .flowOn(Dispatchers.IO)
+    override fun getOverviewTags(app: ApiViewingApp): Flow<List<ExpTag>> {
+        return AppInfo.getExpTags(app, context)
+            .buffer(capacity = Channel.CONFLATED)
+    }
+
+    override fun getDetailedTags(app: ApiViewingApp): Flow<List<FullExpTag>> {
+        return AppInfo.getDetailedExpTags(app, context)
             .buffer(capacity = Channel.CONFLATED)
     }
 }
