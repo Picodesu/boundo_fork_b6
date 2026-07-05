@@ -66,7 +66,6 @@
     <string name="av_adapter_tag_hidden">隱藏</string>
     <string name="av_settings_tag_hidden">不在啟動器顯示圖標</string>
     <string name="av_main_filter_tip">試試長按標籤</string>
-    <string name="av_settings_tag_huawei_push">華為推送</string>
     <string name="av_settings_tag_xiaomi_push">小米推送</string>
     <string name="av_settings_tag_meizu_push">魅族推送</string>
     <string name="av_settings_tag_oppo_push">Oppo 推送</string>

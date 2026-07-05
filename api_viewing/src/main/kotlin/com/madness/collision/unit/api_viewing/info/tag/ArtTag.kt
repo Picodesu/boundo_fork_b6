@@ -70,7 +70,6 @@ enum class MessagingTag(override val id: String) : ArtTagGroup {
     Firebase(Tag.ID_MSG_FCM),
 
     Honor(Tag.ID_MSG_HONOR),
-    Huawei(Tag.ID_MSG_HUAWEI),
     Meizu(Tag.ID_MSG_MEIZU),
     Oppo(Tag.ID_MSG_OPPO),
     Vivo(Tag.ID_MSG_VIVO),

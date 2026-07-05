@@ -66,7 +66,6 @@
     <string name="av_adapter_tag_hidden">پنهان شده است</string>
     <string name="av_settings_tag_hidden">نماد برنامه در راه‌انداز نشان داده نمی‌شود</string>
     <string name="av_main_filter_tip">فشار دادن طولانی یک برچسب را امتحان کنید</string>
-    <string name="av_settings_tag_huawei_push">&#8207;Huawei push</string>
     <string name="av_settings_tag_xiaomi_push">&#8207;Xiaomi push</string>
     <string name="av_settings_tag_meizu_push">&#8207;Meizu push</string>
     <string name="av_settings_tag_oppo_push">&#8207;Oppo push</string>

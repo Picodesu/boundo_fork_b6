@@ -66,7 +66,6 @@
     <string name="av_adapter_tag_hidden">مخفي</string>
     <string name="av_settings_tag_hidden">لا يظهر رمز التطبيق في المشغل</string>
     <string name="av_main_filter_tip">حاول الضغط مع الاستمرار على علامة</string>
-    <string name="av_settings_tag_huawei_push">&#1564;Huawei push</string>
     <string name="av_settings_tag_xiaomi_push">&#1564;Xiaomi push</string>
     <string name="av_settings_tag_meizu_push">&#1564;Meizu push</string>
     <string name="av_settings_tag_oppo_push">&#1564;Oppo push</string>

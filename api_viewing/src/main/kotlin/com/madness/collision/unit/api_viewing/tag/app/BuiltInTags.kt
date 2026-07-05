@@ -216,13 +216,6 @@ internal fun builtInTags(): Map<String, AppTagInfo> = listOf(
         expressing = serviceExpressing("com.google.firebase.messaging.FirebaseMessagingService")
     ).apply { iconKey = "fcm" },
     AppTagInfo(
-        id = AppTagInfo.ID_MSG_HUAWEI, category = 0.cat, icon = R.drawable.ic_huawei_72.icon,
-        label = R.string.av_settings_tag_huawei_push.labels, rank = "33",
-        desc = "com.huawei.hms.support.api.push.service.HmsMsgService".serviceResultDesc,
-        requisites = pkgServicesRequisite().list,
-        expressing = serviceExpressing("com.huawei.hms.support.api.push.service.HmsMsgService")
-    ).apply { iconKey = "hwp" },
-    AppTagInfo(
         id = AppTagInfo.ID_MSG_XIAOMI, category = 0.cat, icon = R.drawable.ic_xiaomi_72.icon,
         label = R.string.av_settings_tag_xiaomi_push.labels, rank = "34",
         desc = "com.xiaomi.mipush.sdk.MessageHandleService".mipushServiceResultDesc,

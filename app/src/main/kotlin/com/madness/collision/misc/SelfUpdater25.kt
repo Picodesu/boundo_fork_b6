@@ -25,7 +25,7 @@ import com.madness.collision.util.P
 import com.madness.collision.util.os.OsUtils
 
 class SelfUpdater25 : SelfUpdater {
-    override val maxVersion: Int = 25111200
+    override val maxVersion: Int = 26070500
 
     override fun apply(oldVersion: Int, prefSettings: SharedPreferences) {
         // check illegal version code
@@ -66,6 +66,14 @@ class SelfUpdater25 : SelfUpdater {
         if (oldVersion < 25111200 && OsUtils.satisfy(OsUtils.N_MR1)) {
             val manager = chiefContext.getSystemService(ShortcutManager::class.java) ?: return
             Instant(chiefContext, manager).refreshDynamicShortcuts(P.SC_ID_IMMORTAL)
+        }
+        if (oldVersion < 26070500) {
+            val ids = listOf("avTagsValPushHw")
+            val tags = prefSettings.getStringSet("AvTags", null)
+            if (tags != null && ids.any(tags::contains)) {
+                val modSet = tags.toHashSet().apply { removeAll(ids) }
+                prefSettings.edit { putStringSet("AvTags", modSet) }
+            }
         }
     }
 }

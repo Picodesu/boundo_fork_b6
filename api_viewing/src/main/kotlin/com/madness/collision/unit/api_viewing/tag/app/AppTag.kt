@@ -130,7 +130,6 @@ internal class AppTagInfo(
         const val ID_APP_PREDICTIVE_BACK = "avTagsValPreBack"
         const val ID_MSG_FCM = "avTagsValPushFcm"
         const val ID_MSG_HONOR = "avTagsValPushHo"
-        const val ID_MSG_HUAWEI = "avTagsValPushHw"
         const val ID_MSG_XIAOMI = "avTagsValPushMi"
         const val ID_MSG_MEIZU = "avTagsValPushMz"
         const val ID_MSG_OPPO = "avTagsValPushOo"
