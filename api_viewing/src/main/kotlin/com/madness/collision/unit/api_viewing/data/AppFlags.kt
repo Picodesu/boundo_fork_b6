@@ -79,6 +79,10 @@ value class DexPackageFlags private constructor(val value: Int) {
         return isDefined && (bits and bit != 0)
     }
 
+    fun isCompatRev(bit: Int = BIT_NONE): Boolean {
+        return rev in getRequiredRev(bit)..REV
+    }
+
     companion object {
         // binary value of -1 is all ones (i.e. ~0)
         const val UNDEFINED: Int = -1
@@ -89,6 +93,8 @@ value class DexPackageFlags private constructor(val value: Int) {
 
         /* The current revision. Increment on changing bits. */
         const val REV: Int = 5
+        /* The minimum revision that current revision is compatible with. */
+        const val REV_COMPAT: Int = 4
 
         const val BIT_NONE: Int = 0
         const val BIT_KOTLIN: Int = 1 shl 0
@@ -108,6 +114,17 @@ value class DexPackageFlags private constructor(val value: Int) {
         fun from(vararg flagBits: Int): DexPackageFlags {
             val bits = if (flagBits.isNotEmpty()) flagBits.reduce { acc, i -> acc or i } else 0
             return DexPackageFlags((bits shl REV_BITS) + REV)
+        }
+
+        fun getRequiredRev(bit: Int): Int {
+            val r = when (bit) {
+                BIT_MAUI -> 4
+                BIT_CORDOVA -> 4
+                BIT_ITGSA_VOIP -> 5
+                else -> REV_COMPAT
+            }
+            check(r >= REV_COMPAT)
+            return r
         }
     }
 }

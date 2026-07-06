@@ -257,7 +257,7 @@ internal fun builtInTags(): Map<String, AppTagInfo> = listOf(
         id = AppTagInfo.ID_MSG_ITGSA_VOIP, category = 0.cat, icon = R.drawable.ic_itgsa_72.icon,
         label = R.string.av_tag_itgsa_voip.labels, rank = "376",
         desc = "com.voip.service".packageResultDesc,
-        requisites = thirdPartyPkgRequisite().list,
+        requisites = pkgItgsaVoipRequisite().list,
         expressing = commonExpressing { DexPackageFlags.BIT_ITGSA_VOIP in it.dexPackageFlags }
     ).apply { iconKey = "vip" },
     AppTagInfo(
@@ -456,7 +456,7 @@ private fun kotlinRequisite(): AppTagInfo.Requisite = AppTagInfo.Requisite(
     id = "ReqKotlin",
     checker = { res ->
         res.app.archiveEntryFlags.run { isValidRev && contains(ArchiveEntryFlags.BIT_KOTLIN) } ||
-                res.app.dexPackageFlags.isValidRev
+                res.app.dexPackageFlags.isCompatRev(DexPackageFlags.BIT_KOTLIN)
     },
     loader = { res ->
         if (!res.app.archiveEntryFlags.isValidRev) res.app.retrieveArchiveEntries()
@@ -468,7 +468,7 @@ private fun mauiRequisite(): AppTagInfo.Requisite = AppTagInfo.Requisite(
     id = "ReqMaui",
     checker = { res ->
         res.app.archiveEntryFlags.run { isValidRev && contains(ArchiveEntryFlags.BIT_LIB_MAUI) } ||
-                res.app.dexPackageFlags.isValidRev
+                res.app.dexPackageFlags.isCompatRev(DexPackageFlags.BIT_MAUI)
     },
     loader = { res ->
         if (!res.app.archiveEntryFlags.isValidRev) res.app.retrieveArchiveEntries()
@@ -539,7 +539,13 @@ private fun flagGetDisabledLegacy() = PackageManager.GET_DISABLED_COMPONENTS
 
 private fun thirdPartyPkgRequisite(): AppTagInfo.Requisite = AppTagInfo.Requisite(
     id = "ReqThirdPartyPkg",
-    checker = { res -> res.app.dexPackageFlags.isValidRev },
+    checker = { res -> res.app.dexPackageFlags.isCompatRev() },
+    loader = { res -> res.app.retrieveThirdPartyPackages() }
+)
+
+private fun pkgItgsaVoipRequisite(): AppTagInfo.Requisite = AppTagInfo.Requisite(
+    id = "Req_ITGSA_VoIP",
+    checker = { res -> res.app.dexPackageFlags.isCompatRev(DexPackageFlags.BIT_ITGSA_VOIP) },
     loader = { res -> res.app.retrieveThirdPartyPackages() }
 )
 
