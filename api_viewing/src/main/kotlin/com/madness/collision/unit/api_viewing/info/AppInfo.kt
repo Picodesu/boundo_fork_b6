@@ -70,11 +70,11 @@ internal object AppInfo {
                 .filter { tag -> tag.requisites.orEmpty().all { req -> req.checker(res) } }
                 .mapNotNull { tag -> tag.toExpTagOrNull(res) }
                 // hide inactivated package installer tags
-                .dropWhile { expTag ->
+                .filter { expTag ->
                     when (expTag.id) {
-                        SystemTag.GooglePlayStore.id -> !expTag.activated
-                        SystemTag.PackageInstaller.id -> !expTag.activated
-                        else -> false
+                        SystemTag.GooglePlayStore.id -> expTag.activated
+                        SystemTag.PackageInstaller.id -> expTag.activated
+                        else -> true
                     }
                 }
         }

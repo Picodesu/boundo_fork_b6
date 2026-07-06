@@ -110,7 +110,7 @@ fun AppListHeader(
         modifier = modifier.padding(horizontal = 12.dp, vertical = 10.dp),
         devInfoLabel = headerState.devInfoLabel,
         devInfoDesc = headerState.devInfoDesc,
-        statsSizeLabel = headerState.statsSize.takeIf { it > 0 }?.toString().orEmpty(),
+        statsSizeLabel = headerState.statsSize.takeIf { it >= 0 }?.toString().orEmpty(),
         onClickDevInfo = headerState::showSystemModules,
         onClickStats = { headerState.showStats(options) },
         queryEnabled = !isLoadingSrc || isQuerying,

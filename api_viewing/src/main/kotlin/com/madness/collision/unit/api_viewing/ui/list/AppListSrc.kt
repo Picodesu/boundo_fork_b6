@@ -194,6 +194,11 @@ class OrderedAppList(private var options: Options) {
         srcMap.clear()
     }
 
+    /** Whether the app list contains any src (empty ones included). */
+    fun containsSrc(): Boolean {
+        return srcSet.any(srcMap::containsKey)
+    }
+
     fun containsSrc(srcKey: ListSrcKey<*>): Boolean {
         return srcSet.any { it.key == srcKey }
     }

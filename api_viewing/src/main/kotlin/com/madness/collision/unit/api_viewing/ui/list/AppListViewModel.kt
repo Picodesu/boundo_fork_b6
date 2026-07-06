@@ -176,7 +176,7 @@ class AppListViewModel : ViewModel() {
 
             val srcFlow = combine(srcLoader.loadingSrcFlow, mutAppsModNotifier) { loadingSrcSet, _ ->
                 loadingSrcSet.isNotEmpty() to
-                        ListSrcCat.entries.filter { c -> multiSrcApps[c].isNotEmpty() }.toSet()
+                        ListSrcCat.entries.filter { c -> multiSrcApps[c].containsSrc() }.toSet()
             }
             srcFlow
                 .onEach src@{ (isLoadingSrc, loadedCats) ->
