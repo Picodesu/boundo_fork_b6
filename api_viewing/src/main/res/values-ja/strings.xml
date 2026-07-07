@@ -150,6 +150,8 @@
     <string name="av_info_arch_abi_other">その他の ABI</string>
     <string name="av_info_arch_none">APK にネイティブ ライブラリは見つかりませんでしたが、Java 専用アプリはすべて 64 ビット互換です。</string>
     <string name="av_info_lib_shared_lib">共有ライブラリ</string>
+    <string name="av_info_tag_group_tech">技術</string>
+    <string name="av_info_tag_group_msg">メッセージング</string>
     <string name="org_title">アプリ ライブラリ</string>
     <string name="org_common_sec_default">インストール済みアプリ (%s)</string>
     <string name="org_common_sec_launcher">インストール済みランチャー アプリ (%s)</string>

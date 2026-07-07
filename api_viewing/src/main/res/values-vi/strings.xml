@@ -150,6 +150,8 @@
     <string name="av_info_arch_abi_other">ABI khác</string>
     <string name="av_info_arch_none">Không tìm thấy thư viện gốc nào trong APK, nhưng tất cả các ứng dụng chỉ có Java đều tương thích với 64-bit.</string>
     <string name="av_info_lib_shared_lib">Thư viện dùng chung</string>
+    <string name="av_info_tag_group_tech">Công nghệ</string>
+    <string name="av_info_tag_group_msg">Tin nhắn</string>
     <string name="org_title">Thư viện ứng dụng</string>
     <string name="org_common_sec_default">Ứng dụng đã cài đặt (%s)</string>
     <string name="org_common_sec_launcher">Ứng dụng trình khởi chạy đã cài đặt (%s)</string>

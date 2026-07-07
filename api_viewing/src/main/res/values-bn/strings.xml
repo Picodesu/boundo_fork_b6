@@ -150,6 +150,8 @@
     <string name="av_info_arch_abi_other">অন্যান্য এবিআই</string>
     <string name="av_info_arch_none">APK-তে কোনো নেটিভ লাইব্রেরি পাওয়া যায়নি, তবে সমস্ত জাভা-ভিত্তিক অ্যাপ 64-বিট সামঞ্জস্যপূর্ণ।</string>
     <string name="av_info_lib_shared_lib">শেয়ার্ড লাইব্রেরি</string>
+    <string name="av_info_tag_group_tech">প্রযুক্তি</string>
+    <string name="av_info_tag_group_msg">মেসেজিং</string>
     <string name="org_title">অ্যাপ লাইব্রেরি</string>
     <string name="org_common_sec_default">ইনস্টল করা অ্যাপ্লিকেশান (%s)</string>
     <string name="org_common_sec_launcher">ইনস্টল করা লঞ্চার অ্যাপ্লিকেশান (%s)</string>

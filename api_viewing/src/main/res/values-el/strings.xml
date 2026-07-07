@@ -150,6 +150,8 @@
     <string name="av_info_arch_abi_other">Άλλα ABIs</string>
     <string name="av_info_arch_none">Δεν βρέθηκαν εγγενείς βιβλιοθήκες στο APK, αλλά όλες οι εφαρμογές μόνο Java είναι συμβατές με 64-bit.</string>
     <string name="av_info_lib_shared_lib">Κοινόχρηστη βιβλιοθήκη</string>
+    <string name="av_info_tag_group_tech">Τεχνολογία</string>
+    <string name="av_info_tag_group_msg">Μηνύματα</string>
     <string name="org_title">Βιβλιοθήκη εφαρμογών</string>
     <string name="org_common_sec_default">Εγκατεστημένες εφαρμογές (%s)</string>
     <string name="org_common_sec_launcher">Εγκατεστημένες εφαρμογές εκκίνησης (%s)</string>

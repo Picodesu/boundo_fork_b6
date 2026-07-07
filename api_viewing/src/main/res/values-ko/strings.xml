@@ -150,6 +150,8 @@
     <string name="av_info_arch_abi_other">기타 ABI</string>
     <string name="av_info_arch_none">APK에서 네이티브 라이브러리를 찾을 수 없지만 모든 Java 전용 앱은 64비트 호환됩니다.</string>
     <string name="av_info_lib_shared_lib">공유 라이브러리</string>
+    <string name="av_info_tag_group_tech">기술</string>
+    <string name="av_info_tag_group_msg">메시징</string>
     <string name="org_title">앱 라이브러리</string>
     <string name="org_common_sec_default">설치된 앱 (%s)</string>
     <string name="org_common_sec_launcher">설치된 런처 앱 (%s)</string>

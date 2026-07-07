@@ -150,6 +150,8 @@
     <string name="av_info_arch_abi_other">ਹੋਰ ABI</string>
     <string name="av_info_arch_none">APK ਵਿੱਚ ਕੋਈ ਨੇਟਿਵ ਲਾਇਬ੍ਰੇਰੀ ਨਹੀਂ ਮਿਲੀ, ਪਰ ਸਾਰੇ Java-ਸਿਰਫ਼ ਐਪ 64-ਬਿੱਟ ਅਨੁਕੂਲ ਹਨ।</string>
     <string name="av_info_lib_shared_lib">ਸਾਂਝੀ ਲਾਇਬ੍ਰੇਰੀ</string>
+    <string name="av_info_tag_group_tech">ਤਕਨਾਲੋਜੀ</string>
+    <string name="av_info_tag_group_msg">ਮੈਸੇਜਿੰਗ</string>
     <string name="org_title">ਐਪ ਲਾਇਬ੍ਰੇਰੀ</string>
     <string name="org_common_sec_default">ਇੰਸਟਾਲ ਕੀਤੇ ਐਪਸ (%s)</string>
     <string name="org_common_sec_launcher">ਇੰਸਟਾਲ ਕੀਤੇ ਲਾਂਚਰ ਐਪਸ (%s)</string>

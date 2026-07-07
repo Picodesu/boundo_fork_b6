@@ -150,6 +150,8 @@
     <string name="av_info_arch_abi_other">ABI Lain</string>
     <string name="av_info_arch_none">Tidak ada pustaka asli yang ditemukan di APK, tetapi semua aplikasi khusus Java kompatibel dengan 64-bit.</string>
     <string name="av_info_lib_shared_lib">Pustaka Bersama</string>
+    <string name="av_info_tag_group_tech">Teknologi</string>
+    <string name="av_info_tag_group_msg">Pesan</string>
     <string name="org_title">Pustaka Aplikasi</string>
     <string name="org_common_sec_default">Aplikasi terinstal (%s)</string>
     <string name="org_common_sec_launcher">Aplikasi peluncur terinstal (%s)</string>

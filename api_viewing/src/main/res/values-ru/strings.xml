@@ -150,6 +150,8 @@
     <string name="av_info_arch_abi_other">Другие ABI</string>
     <string name="av_info_arch_none">В APK не найдены нативные библиотеки, но все приложения только на Java совместимы с 64-битной архитектурой.</string>
     <string name="av_info_lib_shared_lib">Общая библиотека</string>
+    <string name="av_info_tag_group_tech">Технологии</string>
+    <string name="av_info_tag_group_msg">Сообщения</string>
     <string name="org_title">Библиотека приложений</string>
     <string name="org_common_sec_default">Установленные приложения (%s)</string>
     <string name="org_common_sec_launcher">Установленные приложения запуска (%s)</string>

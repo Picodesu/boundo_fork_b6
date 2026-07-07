@@ -150,6 +150,8 @@
     <string name="av_info_arch_abi_other">अन्य ABI</string>
     <string name="av_info_arch_none">APK में कोई मूल लाइब्रेरी नहीं मिली, लेकिन सभी Java-ओनली ऐप 64-बिट संगत हैं।</string>
     <string name="av_info_lib_shared_lib">शेयर्ड लाइब्रेरी</string>
+    <string name="av_info_tag_group_tech">तकनीक</string>
+    <string name="av_info_tag_group_msg">मेसेजिंग</string>
     <string name="org_title">ऐप लाइब्रेरी</string>
     <string name="org_common_sec_default">इंस्टॉल किए गए ऐप्स (%s)</string>
     <string name="org_common_sec_launcher">इंस्टॉल किए गए लॉन्चर ऐप्स (%s)</string>

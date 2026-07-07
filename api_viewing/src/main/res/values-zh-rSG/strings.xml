@@ -83,6 +83,8 @@
     <string name="av_details_real_installer">"实际安装程序："</string>
     <string name="av_upd_ver_upd">版本更新</string>
     <string name="av_upd_pck_upd">包更新</string>
+    <string name="av_tag_honor_push">荣耀推送</string>
+    <string name="av_tag_itgsa_voip">金标联盟 VoIP Service Kit</string>
     <string name="av_tag_jpush_normal">极光推送</string>
     <string name="av_tag_upush_normal">友盟推送</string>
     <string name="av_tag_tpns_normal">腾讯移动推送</string>
@@ -169,6 +171,8 @@
     <string name="av_info_arch_abi_other">其他 ABI</string>
     <string name="av_info_arch_none">安装包内未发现原生库，不过纯 Java 应用均兼容64位。</string>
     <string name="av_info_lib_shared_lib">共享库</string>
+    <string name="av_info_tag_group_tech">技术栈</string>
+    <string name="av_info_tag_group_msg">消息推送</string>
     <string name="org_title">应用库</string>
     <string name="org_common_sec_default">已安装应用 (%s)</string>
     <string name="org_common_sec_launcher">已安装启动器应用 (%s)</string>

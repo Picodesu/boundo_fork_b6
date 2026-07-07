@@ -150,6 +150,8 @@
     <string name="av_info_arch_abi_other">Inne ABI</string>
     <string name="av_info_arch_none">Nie znaleziono natywnych bibliotek w APK, ale wszystkie aplikacje tylko w języku Java są kompatybilne z 64-bitami.</string>
     <string name="av_info_lib_shared_lib">Biblioteka współdzielona</string>
+    <string name="av_info_tag_group_tech">Technologia</string>
+    <string name="av_info_tag_group_msg">Wiadomości</string>
     <string name="org_title">Biblioteka aplikacji</string>
     <string name="org_common_sec_default">Zainstalowane aplikacje (%s)</string>
     <string name="org_common_sec_launcher">Zainstalowane aplikacje uruchamiające (%s)</string>
