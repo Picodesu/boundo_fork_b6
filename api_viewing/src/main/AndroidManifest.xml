@@ -16,8 +16,7 @@
 
 <manifest xmlns:dist="http://schemas.android.com/apk/distribution"
     xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    package="com.madness.collision.unit.api_viewing">
+    xmlns:tools="http://schemas.android.com/tools">
 
     <dist:module
         dist:instant="false"

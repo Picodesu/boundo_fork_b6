@@ -16,8 +16,7 @@
   -->
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    package="com.madness.collision">
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!-- HEIF support for Image Modifying, requires Android 9 -->
     <uses-sdk tools:overrideLibrary="androidx.heifwriter"/>
