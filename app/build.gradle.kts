@@ -291,7 +291,7 @@ tasks.register<Exec>("buildFossApks") {
     commandLine("java", "-jar", bundleToolPath, "build-apks",
         "--bundle=app/build/outputs/bundle/foss/app-foss.aab",
         "--output=app/build/outputs/app-universal-foss.apks",
-        "--ks=doconfig/ke универси.jks",
+        "--ks=doconfig/keystore.jks",
         "--ks-pass=pass:",
         "--ks-key-alias=",
         "--key-pass=pass:",
