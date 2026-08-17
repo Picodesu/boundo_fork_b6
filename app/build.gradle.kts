@@ -86,18 +86,18 @@ android {
             "hi", "hi-rIN",
             "in", "in-rID",
             "it", "it-rIT",
-            "ja", "ja-rJP",
-            "ko", "ko-rKR",
-            "mr", "mr-rIN",
-            "pa", "pa-rPK",
-            "pl", "pl-rPL",
-            "pt", "pt-rPT",
-            "ru", "ru-rRU",
-            "th", "th-rTH",
-            "tr", "tr-rTR",
-            "uk", "uk-rUA",
-            "vi", "vi-rVN",
-            "zh", "zh-rCN", "zh-rHK", "zh-rMO", "zh-rSG", "zh-rTW",
+            "ja", "ja-jp", "ja-jp",
+            "ko", "ko-kr",
+            "mr", "mr-in",
+            "pa", "pa-pk",
+            "pl", "pl-pl",
+            "pt", "pt-pt",
+            "ru", "ru-ru",
+            "th", "th-th",
+            "tr", "tr-tr",
+            "uk", "uk-ua",
+            "vi", "vi-vn",
+            "zh", "zh-CN", "zh-HK", "zh-MO", "zh-SG", "zh-TW",
         ))
     }
     buildTypes {
@@ -173,6 +173,8 @@ dependencies {
 
     implementation(project(":mods:core"))
     implementation(platform(libs.androidxComposeBom))
+    // OPPO seamless animation
+    implementation(files("libs/viewseamless-1.0.0.aar"))
     listOf(
         fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))),
 //            libs.androidxWorkRuntime,
@@ -257,74 +259,50 @@ tasks.register<Copy>("genFossApks") {
     dependsOn("buildFossApks", "printBundleToolVersion")
 }
 
-tasks.register<JavaExec>("printBundleToolVersion") {
-    val bundleTool = rootProject.file("doconfig/bundletool.jar")
-    classpath = files(bundleTool)
-    mainClass.set("com.android.tools.build.bundletool.BundleToolMain")
-    args("version")
-    doFirst { print("BundleTool ") }
-}
-
-tasks.register<JavaExec>("buildUniversalApks") {
-    val bundleTool = rootProject.file("doconfig/bundletool.jar")
-    classpath = files(bundleTool)
-    mainClass.set("com.android.tools.build.bundletool.BundleToolMain")
-    val customConfig = getCustomConfig(project)
-    if (customConfig.signing != null) {
-        customConfig.signing?.run {
-            args(
-                "build-apks",
-                "--bundle", file("build/outputs/bundle/release/app-release.aab").absolutePath,
-                "--output", file("build/outputs/app-universal-release.apks").absolutePath,
-                "--ks", rootProject.file(store.path).absolutePath,
-                "--ks-pass=pass:${store.password}",
-                "--ks-key-alias", key.alias,
-                "--key-pass=pass:${key.password}",
-                "--overwrite",
-                "--mode=universal",
-            )
-        }
-    } else {
-        args(
-            "build-apks",
-            "--bundle", file("build/outputs/bundle/release/app-release.aab").absolutePath,
-            "--output", file("build/outputs/app-universal-release.apks").absolutePath,
-            "--overwrite",
-            "--mode=universal",
-        )
-    }
-
+tasks.register<Exec>("buildUniversalApks") {
     dependsOn("bundleRelease")
+    val bundleToolPath = providers.exec {
+        commandLine("find", "build-tools", "-name", "bundletool.jar", "-print", "-quit")
+    }.standardOutput.asText.get().trim()
+    commandLine("java", "-jar", bundleToolPath, "build-apks",
+        "--bundle=app/build/outputs/bundle/release/app-release.aab",
+        "--output=app/build/outputs/app-universal-release.apks",
+        "--ks=doconfig/keystore.jks",
+        "--ks-pass=pass:",
+        "--ks-key-alias=",
+        "--key-pass=pass:",
+        "--mode=universal")
+    doFirst {
+        // read signing credentials
+        val signing = getCustomConfig(project).signing
+        if (signing != null) {
+            environment("SIGNING_KEYSTORE_PASSWORD", signing.store.password)
+            environment("SIGNING_KEY_ALIAS", signing.key.alias)
+            environment("SIGNING_KEY_PASSWORD", signing.key.password)
+        }
+    }
 }
 
-tasks.register<JavaExec>("buildFossApks") {
-    val bundleTool = rootProject.file("doconfig/bundletool.jar")
-    classpath = files(bundleTool)
-    mainClass.set("com.android.tools.build.bundletool.BundleToolMain")
-    val customConfig = getCustomConfig(project)
-    if (customConfig.signing != null) {
-        customConfig.signing?.run {
-            args(
-                "build-apks",
-                "--bundle", file("build/outputs/bundle/foss/app-foss.aab").absolutePath,
-                "--output", file("build/outputs/app-universal-foss.apks").absolutePath,
-                "--ks", rootProject.file(store.path).absolutePath,
-                "--ks-pass=pass:${store.password}",
-                "--ks-key-alias", key.alias,
-                "--key-pass=pass:${key.password}",
-                "--overwrite",
-                "--mode=universal",
-            )
-        }
-    } else {
-        args(
-            "build-apks",
-            "--bundle", file("build/outputs/bundle/foss/app-foss.aab").absolutePath,
-            "--output", file("build/outputs/app-universal-foss.apks").absolutePath,
-            "--overwrite",
-            "--mode=universal",
-        )
-    }
-
+tasks.register<Exec>("buildFossApks") {
     dependsOn("bundleFoss")
+    val bundleToolPath = providers.exec {
+        commandLine("find", "build-tools", "-name", "bundletool.jar", "-print", "-quit")
+    }.standardOutput.asText.get().trim()
+    commandLine("java", "-jar", bundleToolPath, "build-apks",
+        "--bundle=app/build/outputs/bundle/foss/app-foss.aab",
+        "--output=app/build/outputs/app-universal-foss.apks",
+        "--ks=doconfig/ke универси.jks",
+        "--ks-pass=pass:",
+        "--ks-key-alias=",
+        "--key-pass=pass:",
+        "--mode=universal")
+    doFirst {
+        // read signing credentials
+        val signing = getCustomConfig(project).signing
+        if (signing != null) {
+            environment("SIGNING_KEYSTORE_PASSWORD", signing.store.password)
+            environment("SIGNING_KEY_ALIAS", signing.key.alias)
+            environment("SIGNING_KEY_PASSWORD", signing.key.password)
+        }
+    }
 }
