@@ -3,97 +3,87 @@ name: Android CI
 on:
   push:
     branches:
-      - main # Trigger on push to main branch
+      - main
     paths:
       - '**/src/main/**'
       - '**/build.gradle.kts'
       - 'gradle/libs.versions.toml'
   pull_request:
     branches:
-      - main # Trigger on pull request targeting main branch
+      - main
     paths:
       - '**/src/main/**'
       - '**/build.gradle.kts'
       - 'gradle/libs.versions.toml'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
-      # Checkout code
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      # Set up JDK
-      - name: Set up JDK 17
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
           distribution: 'zulu'
+          java-version: '17'
 
-      - name: Setup Gradle wrapper
-        run: chmod +x ./gradlew
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          accept-android-sdk-licenses: true
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
       - name: Setup Signing Config
+        if: ${{ env.SIGNING_KEYSTORE_BASE64 != '' }}
+        env:
+          SIGNING_KEYSTORE_BASE64: ${{ secrets.SIGNING_KEYSTORE_BASE64 }}
+          SIGNING_KEYSTORE_PASSWORD: ${{ secrets.SIGNING_KEYSTORE_PASSWORD }}
+          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
         run: |
-          echo ${{ secrets.SIGNING_KEYSTORE_BASE64 }} | base64 -d > doconfig/keystore.jks
+          mkdir -p doconfig
+          echo $SIGNING_KEYSTORE_BASE64 | base64 -d > doconfig/keystore.jks
           echo packageName=com.madness.collision > doconfig/custom.properties
           echo signingKeyStorePath=doconfig/keystore.jks >> doconfig/custom.properties
-          echo signingKeyStorePassword=${{ secrets.SIGNING_KEYSTORE_PASSWORD }} >> doconfig/custom.properties
-          echo signingKeyAlias=${{ secrets.SIGNING_KEY_ALIAS }} >> doconfig/custom.properties
-          echo signingKeyPassword=${{ secrets.SIGNING_KEY_PASSWORD }} >> doconfig/custom.properties
+          echo signingKeyStorePassword=$SIGNING_KEYSTORE_PASSWORD >> doconfig/custom.properties
+          echo signingKeyAlias=$SIGNING_KEY_ALIAS >> doconfig/custom.properties
+          echo signingKeyPassword=$SIGNING_KEY_PASSWORD >> doconfig/custom.properties
 
-      # Cache BundleTool to speed up builds
-      - name: Cache BundleTool
-        id: bundletool-cache
-        uses: actions/cache@v4
-        with:
-          path: doconfig/bundletool.jar
-          key: ${{ runner.os }}-bundletool-v1.18.2
-
-      - name: Setup BundleTool
-        if: steps.bundletool-cache.outputs.cache-hit != 'true'
-        uses: dsaltares/fetch-gh-release-asset@master
-        with:
-          repo: 'google/bundletool'
-          version: 'tags/1.18.2'
-          file: 'bundletool-all-1.18.2.jar'
-          target: 'doconfig/bundletool.jar'
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Get commit hash and count
+      - name: Build Foss APKs
         run: |
-          COMMIT_HASH=$(git rev-parse --short HEAD)
-          COMMIT_COUNT=$(git rev-list --count HEAD)
-          echo "COMMIT_HASH=${COMMIT_HASH}" >> $GITHUB_ENV
-          echo "COMMIT_COUNT=${COMMIT_COUNT}" >> $GITHUB_ENV
+          mkdir -p build/outputs/apks/foss
+          ./gradlew printBundleToolVersion
+          java -jar /usr/local/lib/android/sdk/build-tools/*/bundletool.jar build-apks --bundle=app/build/outputs/bundle/fossRelease/app-foss-release.aab --output=app/build/outputs/app-universal-foss.apks --ks=doconfig/keystore.jks --ks-pass=pass:${{ secrets.SIGNING_KEYSTORE_PASSWORD }} --ks-key-alias=${{ secrets.SIGNING_KEY_ALIAS }} --key-pass=pass:${{ secrets.SIGNING_KEY_PASSWORD }} --mode=universal
+          cp app/build/outputs/app-universal-foss.apks build/outputs/apks/foss/
 
-      # Install dependencies
-      - name: Install dependencies
-        run: ./gradlew dependencies
+      - name: Build Universal APKs
+        run: |
+          mkdir -p build/outputs/apks/release
+          ./gradlew printBundleToolVersion
+          java -jar /usr/local/lib/android/sdk/build-tools/*/bundletool.jar build-apks --bundle=app/build/outputs/bundle/release/app-release.aab --output=app/build/outputs/app-universal-release.apks --ks=doconfig/keystore.jks --ks-pass=pass:${{ secrets.SIGNING_KEYSTORE_PASSWORD }} --ks-key-alias=${{ secrets.SIGNING_KEY_ALIAS }} --key-pass=pass:${{ secrets.SIGNING_KEY_PASSWORD }} --mode=universal
+          cp app/build/outputs/app-universal-release.apks build/outputs/apks/release/
 
-      # Build the app
-      - name: Build the FOSS app
-        run: ./gradlew :app:genFossApks -Pver.inc=true
-
-      # Build the app
-      - name: Build the app
-        run: ./gradlew :app:genUniversalApks -Pver.inc=true
-
-      # If you want to upload the APK as an artifact
-      - name: Upload FOSS APK as an artifact
+      - name: Upload Foss APKs
         uses: actions/upload-artifact@v4
         with:
-          name: app-foss-apks-g${{ env.COMMIT_COUNT }}-${{ env.COMMIT_HASH }}
-          path: app/build/outputs/apks/foss/universal.apk
+          name: foss-apks-${{ github.run_number }}-${{ env.COMMIT_HASH }}
+          path: build/outputs/apks/foss/
 
-      # If you want to upload the APK as an artifact
-      - name: Upload APK as an artifact
+      - name: Upload Universal APKs
         uses: actions/upload-artifact@v4
         with:
-          name: app-release-apks-g${{ env.COMMIT_COUNT }}-${{ env.COMMIT_HASH }}
-          path: app/build/outputs/apks/release/universal.apk
+          name: universal-apks-${{ github.run_number }}-${{ env.COMMIT_HASH }}
+          path: build/outputs/apks/release/
+
+      - name: Set Commit Hash
+        run: echo "COMMIT_HASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
