@@ -4,7 +4,6 @@ plugins {
     alias(libs.plugins.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.google.ksp)
-    // implement parcelable interface by using annotation
     id("kotlin-parcelize")
     alias(libs.plugins.aboutLibraries)
 }
@@ -14,14 +13,12 @@ ksp {
 }
 
 aboutLibraries {
-    // font licenses are configured under app/config
     collect.configPath = file("config")
 }
 
 android {
     var verInc = 0
     var verCommit: String? = null
-    // ver.inc: property used by CI to enable incremental version by commit count
     val isIncVer = (findProperty("ver.inc") as? String)?.toBooleanStrictOrNull()
     if (isIncVer == true) {
         val commitIncOutput = providers.exec {
@@ -34,7 +31,6 @@ android {
         verCommit = commitHashOutput.get().trim()
     }
 
-    // higher version supports older SDK versions
     buildToolsVersion = "36.0.0"
     val customConfig = getCustomConfig(project)
     val buildPackage = customConfig.buildPackage
@@ -49,16 +45,13 @@ android {
             }
         }
     }
-    // namespace is used by R and BuildConfig classes
     namespace = "com.madness.collision"
     compileSdk = 36
     defaultConfig {
-        // below: manifest placeholders
         manifestPlaceholders["buildPackage"] = buildPackage
         applicationId = "com.madness.collision"
         minSdk = 23
         targetSdk = 36
-        // versionCode = baseVerCode + (verInc % baseCommitInc)
         versionCode = 26070800 + (verInc % 540)
         versionName = listOfNotNull("5.1.2", verCommit).joinToString(separator = "-")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -67,36 +60,32 @@ android {
         if (configSigning) {
             signingConfig = signingConfigs.getByName("Sign4Release")
         }
-        // below: inject the desired values into BuildConfig and Res
-        // the string values have to be wrapped in quotes because the value in local.properties does not have quotes
         buildConfigField("String", "BUILD_PACKAGE", "\"$buildPackage\"")
-        // override with current time in release builds to increase performance during debugging
         buildConfigField("long", "BUILD_TIMESTAMP", "0")
         resValue("string", "buildPackage", buildPackage)
-        // below: fix multi-locale support
         androidResources.localeFilters.addAll(arrayOf(
             "ar",
-            "bn", "bn-rBD",
-            "de", "de-rDE",
-            "el", "el-rGR",
-            "en", "en-rGB", "en-rUS",
-            "es", "es-rES", "es-rUS",
-            "fa", "fa-rAF", "fa-rIR",
-            "fr", "fr-rFR",
-            "hi", "hi-rIN",
-            "in", "in-rID",
-            "it", "it-rIT",
-            "ja", "ja-jp", "ja-jp",
-            "ko", "ko-kr",
-            "mr", "mr-in",
-            "pa", "pa-pk",
-            "pl", "pl-pl",
-            "pt", "pt-pt",
-            "ru", "ru-ru",
-            "th", "th-th",
-            "tr", "tr-tr",
-            "uk", "uk-ua",
-            "vi", "vi-vn",
+            "bn", "bn-BD",
+            "de", "de-DE",
+            "el", "el-GR",
+            "en", "en-GB", "en-US",
+            "es", "es-ES", "es-US",
+            "fa", "fa-AF", "fa-IR",
+            "fr", "fr-FR",
+            "hi", "hi-IN",
+            "in", "in-ID",
+            "it", "it-IT",
+            "ja", "ja-JP",
+            "ko", "ko-KR",
+            "mr", "mr-IN",
+            "pa", "pa-PK",
+            "pl", "pl-PL",
+            "pt", "pt-PT",
+            "ru", "ru-RU",
+            "th", "th-TH",
+            "tr", "tr-TR",
+            "uk", "uk-UA",
+            "vi", "vi-VN",
             "zh", "zh-CN", "zh-HK", "zh-MO", "zh-SG", "zh-TW",
         ))
     }
@@ -123,34 +112,25 @@ android {
             isMinifyEnabled = true
             isShrinkResources = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            // override field with current time in release builds only
             buildConfigField("long", "BUILD_TIMESTAMP", System.currentTimeMillis().toString())
         }
-        // FOSS release
         create("foss") {
-            // foss inherits from release build
             initWith(getByName("release"))
-            // match the release build type for submodules
             matchingFallbacks += "release"
-            // override field from inherited release config with zero for reproducible builds
             buildConfigField("long", "BUILD_TIMESTAMP", "0")
         }
     }
     compileOptions {
-        // Flag to enable support for the new Java 8+ APIs
         isCoreLibraryDesugaringEnabled = true
         targetCompatibility = JavaVersion.VERSION_17
         sourceCompatibility = JavaVersion.VERSION_17
     }
     kotlin.jvmToolchain(17)
     packaging {
-        // a resource file from kotlinx-coroutines that is only used by the debugger
         resources.excludes.add("DebugProbesKt.bin")
     }
     lint {
         checkReleaseBuilds = false
-        // Or, if you prefer, you can continue to check for errors in release builds,
-        // but continue the build even when errors are found:
         abortOnError = false
     }
     buildFeatures {
@@ -161,8 +141,6 @@ android {
     }
     dynamicFeatures.add(":api_viewing")
     bundle {
-        // disable split apks for languages to better support in-app language switching,
-        // for language resources occupy a little space and implementing on-demand language downloads is tedious
         language.enableSplit = false
     }
 }
@@ -173,12 +151,10 @@ dependencies {
 
     implementation(project(":mods:core"))
     implementation(platform(libs.androidxComposeBom))
-    // OPPO seamless animation
-    implementation(files("libs/viewseamless-1.0.0.aar"))
+    // OPPO seamless animation (compileOnly per official docs)
+    compileOnly("com.oplus.animation:viewseamless:1.0.0@aar")
     listOf(
         fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))),
-//            libs.androidxWorkRuntime,
-//            libs.androidxWorkFirebase,
         libs.androidxCore,
         libs.androidxCoreKtx,
         libs.androidxComposeRuntimeLiveData,
@@ -241,20 +217,16 @@ dependencies {
 
 }
 
-// Generate universal APK from AAB that includes necessary dynamic modules (dist:module in manifests).
 tasks.register<Copy>("genUniversalApks") {
     from(zipTree(file("build/outputs/app-universal-release.apks")))
     into(file("build/outputs/apks/release"))
-
     tasks["printBundleToolVersion"].mustRunAfter("buildUniversalApks")
     dependsOn("buildUniversalApks", "printBundleToolVersion")
 }
 
-// Generate universal APK from AAB that includes necessary dynamic modules (dist:module in manifests).
 tasks.register<Copy>("genFossApks") {
     from(zipTree(file("build/outputs/app-universal-foss.apks")))
     into(file("build/outputs/apks/foss"))
-
     tasks["printBundleToolVersion"].mustRunAfter("buildFossApks")
     dependsOn("buildFossApks", "printBundleToolVersion")
 }
@@ -273,7 +245,6 @@ tasks.register<Exec>("buildUniversalApks") {
         "--key-pass=pass:",
         "--mode=universal")
     doFirst {
-        // read signing credentials
         val signing = getCustomConfig(project).signing
         if (signing != null) {
             environment("SIGNING_KEYSTORE_PASSWORD", signing.store.password)
@@ -297,7 +268,6 @@ tasks.register<Exec>("buildFossApks") {
         "--key-pass=pass:",
         "--mode=universal")
     doFirst {
-        // read signing credentials
         val signing = getCustomConfig(project).signing
         if (signing != null) {
             environment("SIGNING_KEYSTORE_PASSWORD", signing.store.password)
