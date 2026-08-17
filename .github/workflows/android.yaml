@@ -43,8 +43,22 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Set Commit Hash
+        run: echo "COMMIT_HASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
+      - name: Detect Signing Availability
+        id: signing
+        env:
+          SIGNING_KEYSTORE_BASE64: ${{ secrets.SIGNING_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$SIGNING_KEYSTORE_BASE64" ]; then
+            echo "available=true" >> $GITHUB_OUTPUT
+          else
+            echo "available=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Setup Signing Config
-        if: ${{ env.SIGNING_KEYSTORE_BASE64 != '' }}
+        if: steps.signing.outputs.available == 'true'
         env:
           SIGNING_KEYSTORE_BASE64: ${{ secrets.SIGNING_KEYSTORE_BASE64 }}
           SIGNING_KEYSTORE_PASSWORD: ${{ secrets.SIGNING_KEYSTORE_PASSWORD }}
@@ -59,19 +73,52 @@ jobs:
           echo signingKeyAlias=$SIGNING_KEY_ALIAS >> doconfig/custom.properties
           echo signingKeyPassword=$SIGNING_KEY_PASSWORD >> doconfig/custom.properties
 
-      - name: Build Foss APKs
+      # Release build with signing (when secrets are available)
+      - name: Build Release AABs
+        if: steps.signing.outputs.available == 'true'
+        run: ./gradlew bundleFossRelease bundleRelease
+
+      - name: Build Foss APKs (signed)
+        if: steps.signing.outputs.available == 'true'
         run: |
           mkdir -p build/outputs/apks/foss
-          ./gradlew printBundleToolVersion
-          java -jar /usr/local/lib/android/sdk/build-tools/*/bundletool.jar build-apks --bundle=app/build/outputs/bundle/fossRelease/app-foss-release.aab --output=app/build/outputs/app-universal-foss.apks --ks=doconfig/keystore.jks --ks-pass=pass:${{ secrets.SIGNING_KEYSTORE_PASSWORD }} --ks-key-alias=${{ secrets.SIGNING_KEY_ALIAS }} --key-pass=pass:${{ secrets.SIGNING_KEY_PASSWORD }} --mode=universal
+          java -jar /usr/local/lib/android/sdk/build-tools/*/bundletool.jar build-apks \
+            --bundle=app/build/outputs/bundle/fossRelease/app-foss-release.aab \
+            --output=app/build/outputs/app-universal-foss.apks \
+            --ks=doconfig/keystore.jks \
+            --ks-pass=pass:${{ secrets.SIGNING_KEYSTORE_PASSWORD }} \
+            --ks-key-alias=${{ secrets.SIGNING_KEY_ALIAS }} \
+            --key-pass=pass:${{ secrets.SIGNING_KEY_PASSWORD }} \
+            --mode=universal
           cp app/build/outputs/app-universal-foss.apks build/outputs/apks/foss/
 
-      - name: Build Universal APKs
+      - name: Build Universal APKs (signed)
+        if: steps.signing.outputs.available == 'true'
         run: |
           mkdir -p build/outputs/apks/release
-          ./gradlew printBundleToolVersion
-          java -jar /usr/local/lib/android/sdk/build-tools/*/bundletool.jar build-apks --bundle=app/build/outputs/bundle/release/app-release.aab --output=app/build/outputs/app-universal-release.apks --ks=doconfig/keystore.jks --ks-pass=pass:${{ secrets.SIGNING_KEYSTORE_PASSWORD }} --ks-key-alias=${{ secrets.SIGNING_KEY_ALIAS }} --key-pass=pass:${{ secrets.SIGNING_KEY_PASSWORD }} --mode=universal
+          java -jar /usr/local/lib/android/sdk/build-tools/*/bundletool.jar build-apks \
+            --bundle=app/build/outputs/bundle/release/app-release.aab \
+            --output=app/build/outputs/app-universal-release.apks \
+            --ks=doconfig/keystore.jks \
+            --ks-pass=pass:${{ secrets.SIGNING_KEYSTORE_PASSWORD }} \
+            --ks-key-alias=${{ secrets.SIGNING_KEY_ALIAS }} \
+            --key-pass=pass:${{ secrets.SIGNING_KEY_PASSWORD }} \
+            --mode=universal
           cp app/build/outputs/app-universal-release.apks build/outputs/apks/release/
+
+      # Debug build (when no signing secrets)
+      - name: Build Debug APKs
+        if: steps.signing.outputs.available == 'false'
+        run: |
+          ./gradlew assembleFossDebug assembleDebug
+          mkdir -p build/outputs/apks/foss build/outputs/apks/release
+          find app/build/outputs -name '*.apk' | while read f; do
+            if echo "$f" | grep -q foss; then
+              cp "$f" build/outputs/apks/foss/
+            else
+              cp "$f" build/outputs/apks/release/
+            fi
+          done
 
       - name: Upload Foss APKs
         uses: actions/upload-artifact@v4
@@ -84,6 +131,3 @@ jobs:
         with:
           name: universal-apks-${{ github.run_number }}-${{ env.COMMIT_HASH }}
           path: build/outputs/apks/release/
-
-      - name: Set Commit Hash
-        run: echo "COMMIT_HASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
