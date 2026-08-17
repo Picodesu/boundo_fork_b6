@@ -74,6 +74,9 @@ jobs:
           echo signingKeyAlias=$SIGNING_KEY_ALIAS >> doconfig/custom.properties
           echo signingKeyPassword=$SIGNING_KEY_PASSWORD >> doconfig/custom.properties
 
+      - name: Fix Gradle Wrapper Permissions
+        run: chmod +x gradlew
+
       # Release build with signing (when secrets are available)
       - name: Build Release AABs
         if: steps.signing.outputs.available == 'true'
