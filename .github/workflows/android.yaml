@@ -80,14 +80,14 @@ jobs:
       # Release build with signing (when secrets are available)
       - name: Build Release AABs
         if: steps.signing.outputs.available == 'true'
-        run: ./gradlew bundleFossRelease bundleRelease
+        run: ./gradlew bundleFoss bundleRelease
 
       - name: Build Foss APKs (signed)
         if: steps.signing.outputs.available == 'true'
         run: |
           mkdir -p build/outputs/apks/foss
           java -jar /usr/local/lib/android/sdk/build-tools/*/bundletool.jar build-apks \
-            --bundle=app/build/outputs/bundle/fossRelease/app-foss-release.aab \
+            --bundle=app/build/outputs/bundle/foss/app-foss.aab \
             --output=app/build/outputs/app-universal-foss.apks \
             --ks=doconfig/keystore.jks \
             --ks-pass=pass:${{ secrets.SIGNING_KEYSTORE_PASSWORD }} \
@@ -114,7 +114,7 @@ jobs:
       - name: Build Debug APKs
         if: steps.signing.outputs.available == 'false'
         run: |
-          ./gradlew assembleFossDebug assembleDebug
+          ./gradlew assembleFoss assembleDebug
           mkdir -p build/outputs/apks/foss build/outputs/apks/release
           find app/build/outputs -name '*.apk' | while read f; do
             if echo "$f" | grep -q foss; then
