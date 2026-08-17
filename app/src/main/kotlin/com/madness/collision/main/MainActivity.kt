@@ -113,10 +113,17 @@ class MainActivity : BaseActivity(), SystemBarMaintainerOwner, MainAppHome {
       }
     }
 
-    inflateLayout(context)
+// val elapsingSplash = ElapsingTime()
+// installSplashScreen().run {
+//   setKeepVisibleCondition {
+//     elapsingSplash.elapsed() < 400L
+//   }
+// }
+// elapsingSplash.reset()
     val v = viewBinding.root
     v.setOnApplyWindowInsetsListener { _, insets ->
       if (checkInsets(insets)) {
+        // sync with AppHomePage
         val toPx: Dp.() -> Float = { toPx(resources.displayMetrics) }
         val homeNavRail = SystemUtil.getRuntimeWindowSize(context)
           .run { x >= 840.dp.toPx() || x + 50.dp.toPx() >= y }
@@ -131,11 +138,12 @@ class MainActivity : BaseActivity(), SystemBarMaintainerOwner, MainAppHome {
   }
 
   private fun checkTargetItem() {
-    var launchItemName = launchItem
+    val launchItemName = launchItem
     if (launchItemName.isNullOrEmpty()) return
     val itemArgs = intent?.getBundleExtra(LAUNCH_ITEM_ARGS)
     val hasArgs = itemArgs != null
     lifecycleScope.launch(Dispatchers.Default) {
+      // wait for Unit init
       delay(200)
       launchItem = null
       val itemUnitDesc = Unit.getDescription(launchItemName) ?: return@launch
@@ -149,8 +157,13 @@ class MainActivity : BaseActivity(), SystemBarMaintainerOwner, MainAppHome {
     }
   }
 
+  /**
+   * update notification availability, notification channels and check app update
+   */
   private suspend fun checkMisc(context: Context, prefSettings: SharedPreferences) {
+    // enable notification
     kotlin.run n@{
+      // Abort check on Android 13
       if (OsUtils.satisfy(OsUtils.T)) return@n
       if (NotificationManagerCompat.from(context).areNotificationsEnabled()) return@n
       if (Random.nextInt(10) != 0) return@n
@@ -160,6 +173,9 @@ class MainActivity : BaseActivity(), SystemBarMaintainerOwner, MainAppHome {
     }
     MiscMain.registerNotificationChannels(context, prefSettings)
     MiscMain.registerImmortalEntry(context)
+
+// prHandler = PermissionRequestHandler(this)
+// SettingsFunc.check4Update(this, null, prHandler)
   }
 
   private suspend fun checkTarget(context: Context) {
